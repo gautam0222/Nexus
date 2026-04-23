@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell, CalendarDays, FolderOpen,
-  MessageSquare, Plus, Search, Settings, Users, Video,
+  MessageSquare, Search, Settings, Users, Video,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
@@ -20,108 +20,85 @@ interface NavItem {
   route: string
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { id: 'activity', label: 'Activity',  icon: <Bell         size={16} />, route: ROUTES.ACTIVITY },
-  { id: 'chat',     label: 'Chat',      icon: <MessageSquare size={16} />, route: ROUTES.CHAT     },
-  { id: 'teams',    label: 'Teams',     icon: <Users         size={16} />, route: ROUTES.TEAMS    },
-  { id: 'calendar', label: 'Calendar',  icon: <CalendarDays  size={16} />, route: ROUTES.CALENDAR },
-  { id: 'files',    label: 'Files',     icon: <FolderOpen    size={16} />, route: ROUTES.FILES    },
-  { id: 'calls',    label: 'Calls',     icon: <Video         size={16} />, route: ROUTES.CALLS    },
+const NAV: NavItem[] = [
+  { id: 'activity', label: 'Activity',  icon: <Bell          size={18} />, route: ROUTES.ACTIVITY },
+  { id: 'chat',     label: 'Chat',      icon: <MessageSquare size={18} />, route: ROUTES.CHAT     },
+  { id: 'teams',    label: 'Teams',     icon: <Users         size={18} />, route: ROUTES.TEAMS    },
+  { id: 'calendar', label: 'Calendar',  icon: <CalendarDays  size={18} />, route: ROUTES.CALENDAR },
+  { id: 'files',    label: 'Files',     icon: <FolderOpen    size={18} />, route: ROUTES.FILES    },
+  { id: 'calls',    label: 'Calls',     icon: <Video         size={18} />, route: ROUTES.CALLS    },
 ]
 
-// ─── Logo ─────────────────────────────────────────────────────────────────────
-function LogoMark() {
-  return (
-    <div className="mb-2 flex items-center justify-center">
-      <div
-        className="flex h-9 w-9 items-center justify-center rounded-xl"
-        style={{
-          background: 'linear-gradient(135deg, #FF0055 0%, #9D00FF 100%)',
-          boxShadow: '0 0 20px rgba(255,0,85,0.55), 0 0 40px rgba(157,0,255,0.35)',
-        }}
-      >
-        <span
-          className="text-md font-black text-white tracking-tighter"
-          style={{ textShadow: '0 0 8px rgba(255,255,255,0.60)' }}
-        >
-          N
-        </span>
-      </div>
-    </div>
-  )
-}
-
-// ─── Divider ──────────────────────────────────────────────────────────────────
-function Dashes() {
+function Divider() {
   return (
     <div
-      className="my-1.5 h-px w-7 self-center rounded-full"
-      style={{ background: 'rgba(0,238,255,0.08)' }}
+      className="my-1 h-px w-8 self-center"
+      style={{ background: 'rgba(255,255,255,0.07)' }}
     />
   )
 }
 
-// ─── NavRail — RIGHT side ─────────────────────────────────────────────────────
 export function NavRail() {
-  const navigate   = useNavigate()
-  const location   = useLocation()
+  const navigate     = useNavigate()
+  const location     = useLocation()
   const { activeSection, setActiveSection, openSearch } = useUIStore()
-  const { user }   = useAuthStore()
+  const { user }     = useAuthStore()
   const { channels } = useChannelStore()
 
   const totalUnread = channels.reduce((s, c) => s + c.unreadCount, 0)
   const hasMention  = channels.some((c) => c.hasMention)
 
-  function handleNav(item: NavItem) {
+  function go(item: NavItem) {
     setActiveSection(item.id)
     navigate(item.route)
   }
 
   return (
     <aside
-      className="flex h-full shrink-0 flex-col items-center py-3 gap-0.5"
+      className="flex h-full shrink-0 select-none flex-col items-center py-3 gap-0.5"
       style={{
         width: 'var(--rail-w)',
-        background: 'linear-gradient(180deg, #0D0D25 0%, #07071A 100%)',
-        borderLeft: '1px solid rgba(0,238,255,0.06)',
+        background: '#141416',
+        borderRight: '1px solid rgba(255,255,255,0.07)',
       }}
     >
-      <LogoMark />
+      {/* Logo */}
+      <div className="mb-3 flex items-center justify-center">
+        <div
+          className="flex h-8 w-8 items-center justify-center rounded-lg"
+          style={{ background: '#5C5CDB' }}
+        >
+          <span className="text-sm font-bold text-white tracking-tight">N</span>
+        </div>
+      </div>
 
       {/* Search */}
-      <Tooltip content="Search  ⌘K" side="left" delayDuration={300}>
-        <button
-          onClick={openSearch}
-          aria-label="Search"
-          className="rail-btn focus-ring mb-1"
-        >
-          <Search size={16} />
+      <Tooltip content="Search  ⌘K" side="right" delayDuration={200}>
+        <button onClick={openSearch} aria-label="Search" className="rail-btn focus-ring">
+          <Search size={17} />
         </button>
       </Tooltip>
 
-      <Dashes />
+      <Divider />
 
-      {/* Nav items */}
-      <nav className="flex flex-1 flex-col items-center gap-0.5 pt-1">
-        {NAV_ITEMS.map((item) => {
-          const isActive =
-            activeSection === item.id || location.pathname.startsWith(item.route)
-          const badge =
-            item.id === 'activity' && totalUnread > 0 ? totalUnread : undefined
+      {/* Nav */}
+      <nav className="flex flex-1 flex-col items-center gap-0.5">
+        {NAV.map((item) => {
+          const isActive = activeSection === item.id || location.pathname.startsWith(item.route)
+          const badge    = item.id === 'activity' && totalUnread > 0 ? totalUnread : undefined
 
           return (
-            <Tooltip key={item.id} content={item.label} side="left" delayDuration={300}>
+            <Tooltip key={item.id} content={item.label} side="right" delayDuration={200}>
               <button
-                onClick={() => handleNav(item)}
+                onClick={() => go(item)}
                 aria-label={item.label}
                 aria-current={isActive ? 'page' : undefined}
                 className={cn('rail-btn focus-ring', isActive && 'active')}
               >
                 {item.icon}
                 {badge !== undefined && (
-                  <span
-                    className={cn('unread-badge', hasMention ? 'bg-nx-pink' : 'bg-nx-cyan text-black')}
-                  >
+                  <span className={cn('unread-badge absolute -top-1 -right-1 text-[9px] h-4 min-w-[14px]',
+                    hasMention ? 'mention' : '')}>
                     {badge > 99 ? '99+' : badge}
                   </span>
                 )}
@@ -131,29 +108,23 @@ export function NavRail() {
         })}
       </nav>
 
-      {/* Bottom controls */}
+      {/* Bottom */}
       <div className="flex flex-col items-center gap-1">
-        <Dashes />
+        <Divider />
 
-        <Tooltip content="New" side="left" delayDuration={300}>
-          <button className="rail-btn focus-ring" aria-label="Create new">
-            <Plus size={16} />
-          </button>
-        </Tooltip>
-
-        <Tooltip content="Settings" side="left" delayDuration={300}>
+        <Tooltip content="Settings" side="right" delayDuration={200}>
           <button
             onClick={() => navigate(ROUTES.SETTINGS)}
             aria-label="Settings"
             className={cn('rail-btn focus-ring', location.pathname.startsWith('/settings') && 'active')}
           >
-            <Settings size={16} />
+            <Settings size={17} />
           </button>
         </Tooltip>
 
         {user && (
-          <Tooltip content={`${user.name} // ${user.status}`} side="left" delayDuration={300}>
-            <button className="mt-1 rounded-xl focus-ring" aria-label="Your profile">
+          <Tooltip content={user.name} side="right" delayDuration={200}>
+            <button className="mt-1 rounded-lg focus-ring" aria-label="Profile">
               <Avatar
                 initials={user.initials}
                 src={user.avatar}

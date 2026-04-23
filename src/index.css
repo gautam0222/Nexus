@@ -1,184 +1,105 @@
 @import "tailwindcss";
 @config "../tailwind.config.ts";
 
-/* ─── Custom properties ────────────────────────────────────── */
+/* ─── Variables ──────────────────────────────────────────────── */
 :root {
-  --rail-w: 48px;
-  --sidebar-w: 220px;
+  --rail-w: 56px;
+  --sidebar-w: 240px;
+  --radius: 6px;
+  --transition: 120ms ease;
 }
 
-/* ─── Keyframes (used in CSS classes below) ─────────────────── */
-@keyframes composerGlow {
-  0%,100% { box-shadow: 0 0 0 1px #FF0055, 0 0 24px rgba(255,0,85,0.28); }
-  33%     { box-shadow: 0 0 0 1px #9D00FF, 0 0 24px rgba(157,0,255,0.28); }
-  66%     { box-shadow: 0 0 0 1px #00EEFF, 0 0 24px rgba(0,238,255,0.28); }
-}
-@keyframes holoShift {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-@keyframes scanMove {
-  from { background-position: 0 0; }
-  to   { background-position: 0 8px; }
-}
-@keyframes msgIn {
-  from { transform: translateX(-10px) scale(0.98); opacity: 0; }
-  to   { transform: translateX(0) scale(1); opacity: 1; }
-}
-
-/* ─── Base resets ─────────────────────────────────────────────── */
+/* ─── Base ────────────────────────────────────────────────────── */
 @layer base {
   *, *::before, *::after { box-sizing: border-box; }
   html, body, #root { height: 100%; margin: 0; padding: 0; }
 
   body {
-    @apply font-sans antialiased;
-    background: #01010A;
-    color: #9898C0;
-    font-feature-settings: "cv11", "ss01";
+    @apply bg-nx-base font-sans text-nx-secondary antialiased;
+    font-feature-settings: "cv11", "ss01", "liga";
     -webkit-font-smoothing: antialiased;
   }
 
-  /* 2px ultra-thin cyan scrollbars */
-  ::-webkit-scrollbar { width: 2px; height: 2px; }
+  /* Thin, subtle scrollbar */
+  ::-webkit-scrollbar       { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: rgba(0, 238, 255, 0.18);
+    background: rgba(255,255,255,0.10);
     border-radius: 99px;
   }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(0, 238, 255, 0.40); }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
   ::-webkit-scrollbar-corner { background: transparent; }
 
   button, input, textarea { outline: none; }
-  ::selection { background: rgba(255, 0, 85, 0.28); color: #fff; }
+  ::selection { background: rgba(92,92,219,0.28); color: #EAEAEA; }
 }
 
 /* ─── Components ──────────────────────────────────────────────── */
 @layer components {
 
-  /* ── RIGHT-side nav rail button ────────────────────────────── */
+  /* ── Focus ring ─────────────────────────────────────────────── */
+  .focus-ring {
+    @apply focus-visible:ring-1 focus-visible:ring-nx-accent/50 focus-visible:ring-offset-0;
+  }
+
+  /* ── Nav rail icon button ─────────────────────────────────────── */
   .rail-btn {
     @apply relative flex h-9 w-9 items-center justify-center rounded-lg
-           transition-all duration-150 cursor-pointer select-none;
-    color: #44446A;
+           text-nx-muted transition-all duration-100 cursor-pointer select-none;
   }
-  .rail-btn:hover {
-    background: rgba(0, 238, 255, 0.06);
-    color: #9898C0;
-  }
-  .rail-btn.active { color: #00EEFF; }
+  .rail-btn:hover { @apply bg-nx-hover text-nx-secondary; }
+  .rail-btn.active { @apply bg-nx-accent/15 text-nx-accent; }
 
-  /* Accent on RIGHT edge (reversed from normal) */
-  .rail-btn.active::after {
+  /* ── Sidebar nav item ─────────────────────────────────────────── */
+  .nav-item {
+    @apply relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-[5px]
+           text-nx-muted cursor-pointer select-none transition-all duration-100;
+    font-size: 13px;
+  }
+  .nav-item:hover { @apply bg-nx-hover text-nx-secondary; }
+  .nav-item.active { @apply bg-nx-active text-nx-primary; }
+  .nav-item.unread { @apply text-nx-primary; }
+
+  /* Left accent bar on active */
+  .nav-item.active::before {
     content: '';
     position: absolute;
-    right: -10px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 2px;
-    height: 16px;
-    border-radius: 2px 0 0 2px;
-    background: #00EEFF;
-    box-shadow: 0 0 10px rgba(0,238,255,0.8), 0 0 22px rgba(0,238,255,0.4);
+    left: 0; top: 20%; height: 60%;
+    width: 2px; border-radius: 0 2px 2px 0;
+    background: #5C5CDB;
   }
 
-  /* Unread dot */
+  /* ── Message hover row ─────────────────────────────────────────── */
+  .msg-row {
+    @apply relative flex gap-3 rounded-lg px-4 py-1.5 transition-colors duration-100;
+  }
+  .msg-row:hover { @apply bg-nx-hover/50; }
+
+  /* ── Composer ─────────────────────────────────────────────────── */
+  .composer {
+    @apply rounded-xl transition-all duration-150;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .composer:focus-within {
+    border-color: rgba(92,92,219,0.40);
+    box-shadow: 0 0 0 3px rgba(92,92,219,0.08);
+  }
+
+  /* ── Popup / dropdown ─────────────────────────────────────────── */
+  .popup {
+    @apply animate-scale-in rounded-xl overflow-hidden;
+    background: #1A1A1D;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 12px 40px rgba(0,0,0,0.70);
+  }
+
+  /* ── Badge ─────────────────────────────────────────────────────── */
   .unread-badge {
-    @apply absolute -top-1 -right-1 flex h-[14px] min-w-[14px] items-center
-           justify-center rounded-full px-0.5 text-[8px] font-black text-black;
-    background: #00EEFF;
-    box-shadow: 0 0 8px rgba(0,238,255,0.7);
+    @apply flex h-[18px] min-w-[18px] items-center justify-center rounded-full
+           px-1 text-[10px] font-semibold text-white;
+    background: #5C5CDB;
   }
-
-  /* ── Terminal sidebar channel item ──────────────────────────── */
-  .ch-item {
-    @apply relative flex w-full items-center gap-2 px-3 py-[5px]
-           cursor-pointer select-none transition-all duration-100;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    color: #44446A;
-  }
-  .ch-item:hover {
-    color: #9898C0;
-    background: rgba(0, 238, 255, 0.035);
-  }
-  .ch-item.active {
-    color: #FFFFFF;
-    background: rgba(0, 238, 255, 0.06);
-  }
-  /* Left glow bar on active */
-  .ch-item.active::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 15%; height: 70%;
-    width: 2px;
-    background: linear-gradient(to bottom, #00EEFF, rgba(0,238,255,0.3));
-    box-shadow: 0 0 10px rgba(0,238,255,0.8);
-  }
-  .ch-item.unread { color: #FFFFFF; }
-
-  /* ── Holographic gradient chip ──────────────────────────────── */
-  .holo-chip {
-    background: linear-gradient(
-      135deg,
-      rgba(255,0,85,0.12),
-      rgba(157,0,255,0.12),
-      rgba(0,238,255,0.12),
-      rgba(187,255,0,0.10),
-      rgba(255,0,85,0.12)
-    );
-    background-size: 400% 400%;
-    animation: holoShift 4s ease infinite;
-    border: 1px solid rgba(0,238,255,0.18);
-  }
-
-  /* ── Message card ───────────────────────────────────────────── */
-  .msg-card {
-    @apply rounded-lg px-4 py-3 transition-all duration-150;
-    background: rgba(13,13,37,0.90);
-    border-left: 2px solid transparent;
-    margin-bottom: 3px;
-    animation: msgIn 0.18s cubic-bezier(0.34,1.2,0.64,1);
-  }
-  .msg-card:hover {
-    background: rgba(18,18,48,0.95);
-    transform: translateX(3px);
-    box-shadow: 0 4px 24px rgba(0,0,0,0.60);
-  }
-
-  /* ── Composer ───────────────────────────────────────────────── */
-  .composer-wrap {
-    @apply rounded-xl transition-all duration-200;
-    background: rgba(13,13,37,0.95);
-    border: 1px solid rgba(0,238,255,0.08);
-  }
-  .composer-wrap:focus-within {
-    animation: composerGlow 3s ease infinite;
-  }
-
-  /* ── Floating HUD glass panel ───────────────────────────────── */
-  .hud-glass {
-    background: rgba(7,7,26,0.82);
-    backdrop-filter: blur(16px) saturate(160%);
-    -webkit-backdrop-filter: blur(16px) saturate(160%);
-    border: 1px solid rgba(0,238,255,0.12);
-    border-radius: 12px;
-  }
-
-  /* Focus ring */
-  .focus-ring {
-    @apply focus-visible:ring-1 focus-visible:ring-nx-cyan/50 focus-visible:ring-offset-0;
-  }
-
-  /* Sidebar separator label */
-  .sep-label {
-    @apply px-3 pb-1 pt-4;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.20em;
-    color: #1C1C40;
-  }
+  .unread-badge.mention { background: #E5484D; }
 }
 
 /* ─── Utilities ───────────────────────────────────────────────── */
@@ -186,38 +107,6 @@
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-  /* Cyber grid background */
-  .grid-bg {
-    background-image:
-      linear-gradient(rgba(0,238,255,0.022) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,238,255,0.022) 1px, transparent 1px);
-    background-size: 40px 40px;
-  }
-
-  /* CRT scanlines */
-  .scanlines {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 9998;
-    background: repeating-linear-gradient(
-      to bottom,
-      transparent 0px,
-      transparent 3px,
-      rgba(0,0,0,0.05) 3px,
-      rgba(0,0,0,0.05) 4px
-    );
-    animation: scanMove 8s linear infinite;
-  }
-
-  /* Neon text glow */
-  .neon-pink   { color: #FF0055; text-shadow: 0 0 10px rgba(255,0,85,0.75), 0 0 20px rgba(255,0,85,0.40); }
-  .neon-cyan   { color: #00EEFF; text-shadow: 0 0 10px rgba(0,238,255,0.75), 0 0 20px rgba(0,238,255,0.40); }
-  .neon-lime   { color: #BBFF00; text-shadow: 0 0 10px rgba(187,255,0,0.65), 0 0 20px rgba(187,255,0,0.30); }
-  .neon-purple { color: #9D00FF; text-shadow: 0 0 10px rgba(157,0,255,0.75), 0 0 20px rgba(157,0,255,0.40); }
-  .neon-amber  { color: #FF8800; text-shadow: 0 0 10px rgba(255,136,0,0.65), 0 0 20px rgba(255,136,0,0.30); }
-
-  /* hairline separators */
-  .sep-top    { border-top:    1px solid rgba(0,238,255,0.05); }
-  .sep-bottom { border-bottom: 1px solid rgba(0,238,255,0.05); }
+  .sep { border-top: 1px solid rgba(255,255,255,0.07); }
+  .sep-b { border-bottom: 1px solid rgba(255,255,255,0.07); }
 }
