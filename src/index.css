@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Base resets ─────────────────────────────────────────── */
+@layer base {
+
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+    }
+
+    html,
+    body,
+    #root {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        @apply bg-nx-bg font-sans text-nx-cream antialiased;
+        font-feature-settings: "cv11", "ss01";
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Custom scrollbars — thin, dark, unobtrusive */
+    ::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        @apply bg-nx-border2 rounded-full;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        @apply bg-nx-subtle;
+    }
+
+    ::-webkit-scrollbar-corner {
+        background: transparent;
+    }
+
+    /* Remove default button/input focus rings — we add our own */
+    button,
+    input,
+    textarea {
+        outline: none;
+    }
+
+    /* Selection color */
+    ::selection {
+        @apply bg-nx-indigo text-white;
+    }
+}
+
+/* ─── Component helpers ───────────────────────────────────── */
+@layer components {
+
+    /* Focus visible ring — only shows on keyboard nav */
+    .focus-ring {
+        @apply focus-visible:ring-2 focus-visible:ring-nx-indigo focus-visible:ring-offset-1 focus-visible:ring-offset-nx-bg;
+    }
+
+    /* Sidebar item base */
+    .sidebar-item {
+        @apply flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-nx-muted transition-colors duration-100 cursor-pointer select-none;
+    }
+
+    .sidebar-item:hover {
+        @apply bg-nx-surface2 text-nx-cream;
+    }
+
+    .sidebar-item.active {
+        @apply bg-nx-indigo-muted text-nx-indigo-l font-medium;
+    }
+
+    /* Nav rail button */
+    .rail-btn {
+        @apply relative flex h-10 w-10 items-center justify-center rounded-xl text-nx-muted transition-all duration-150 cursor-pointer;
+    }
+
+    .rail-btn:hover {
+        @apply bg-nx-surface2 text-nx-cream;
+    }
+
+    .rail-btn.active {
+        @apply bg-nx-indigo text-white shadow-glow-sm;
+    }
+
+    /* Unread badge */
+    .unread-badge {
+        @apply absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-nx-indigo px-0.5 text-2xs font-semibold text-white;
+    }
+}
+
+/* ─── Utilities ───────────────────────────────────────────── */
+@layer utilities {
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .text-gradient {
+        @apply bg-gradient-to-r from-nx-indigo-l to-nx-mint bg-clip-text text-transparent;
+    }
+}
