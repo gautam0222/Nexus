@@ -1,117 +1,174 @@
 @import "tailwindcss";
 @config "../tailwind.config.ts";
 
-/* ─── Base resets ─────────────────────────────────────────── */
-@layer base {
-
-    *,
-    *::before,
-    *::after {
-        box-sizing: border-box;
-    }
-
-    html,
-    body,
-    #root {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-    }
-
-    body {
-        @apply bg-nx-bg font-sans text-nx-cream antialiased;
-        font-feature-settings: "cv11", "ss01";
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-    }
-
-    /* Custom scrollbars — thin, dark, unobtrusive */
-    ::-webkit-scrollbar {
-        width: 4px;
-        height: 4px;
-    }
-
-    ::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    ::-webkit-scrollbar-thumb {
-        @apply bg-nx-border2 rounded-full;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-        @apply bg-nx-subtle;
-    }
-
-    ::-webkit-scrollbar-corner {
-        background: transparent;
-    }
-
-    /* Remove default button/input focus rings — we add our own */
-    button,
-    input,
-    textarea {
-        outline: none;
-    }
-
-    /* Selection color */
-    ::selection {
-        @apply bg-nx-indigo text-white;
-    }
+/* ─── CSS custom properties ──────────────────────────────── */
+:root {
+  --rail-w: 52px;
+  --sidebar-w: 236px;
+  --radius-msg: 14px;
+  --composer-radius: 14px;
+  --transition-fast: 100ms cubic-bezier(0.4,0,0.2,1);
+  --transition-base: 150ms cubic-bezier(0.4,0,0.2,1);
+  --transition-spring: 200ms cubic-bezier(0.34,1.56,0.64,1);
 }
 
-/* ─── Component helpers ───────────────────────────────────── */
+/* ─── Base resets ─────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    @apply bg-nx-base font-sans text-nx-primary antialiased;
+    font-feature-settings: "cv11", "ss01", "liga";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Ultra-thin scrollbars */
+  ::-webkit-scrollbar { width: 3px; height: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.08);
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.14);
+  }
+  ::-webkit-scrollbar-corner { background: transparent; }
+
+  /* Reset focus */
+  button, input, textarea { outline: none; }
+
+  /* Selection */
+  ::selection {
+    background: rgba(139,92,246,0.30);
+    color: #ECEEFF;
+  }
+}
+
+/* ─── Component primitives ────────────────────────────────── */
 @layer components {
 
-    /* Focus visible ring — only shows on keyboard nav */
-    .focus-ring {
-        @apply focus-visible:ring-2 focus-visible:ring-nx-indigo focus-visible:ring-offset-1 focus-visible:ring-offset-nx-bg;
-    }
+  /* Focus ring — keyboard only */
+  .focus-ring {
+    @apply focus-visible:ring-1 focus-visible:ring-nx-violet/50 focus-visible:ring-offset-0;
+  }
 
-    /* Sidebar item base */
-    .sidebar-item {
-        @apply flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-nx-muted transition-colors duration-100 cursor-pointer select-none;
-    }
+  /* ── Nav rail button ──────────────────────────────────── */
+  .rail-btn {
+    @apply relative flex h-9 w-9 items-center justify-center rounded-xl text-nx-muted
+           transition-all duration-150 cursor-pointer select-none;
+  }
+  .rail-btn:hover {
+    @apply bg-nx-overlay text-nx-secondary;
+  }
+  .rail-btn.active {
+    @apply text-nx-violet;
+    box-shadow: 0 0 0 1px rgba(139,92,246,0.25);
+    background: rgba(139,92,246,0.10);
+  }
+  /* Left glow accent on active */
+  .rail-btn.active::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 18px;
+    border-radius: 0 2px 2px 0;
+    background: #8B5CF6;
+    box-shadow: 0 0 8px rgba(139,92,246,0.7);
+  }
 
-    .sidebar-item:hover {
-        @apply bg-nx-surface2 text-nx-cream;
-    }
+  /* Unread dot badge */
+  .unread-badge {
+    @apply absolute -top-1 -right-1 flex h-4 min-w-[14px] items-center justify-center
+           rounded-full px-0.5 text-[9px] font-bold text-white animate-badge-pop;
+    background: #8B5CF6;
+    box-shadow: 0 0 8px rgba(139,92,246,0.5);
+  }
 
-    .sidebar-item.active {
-        @apply bg-nx-indigo-muted text-nx-indigo-l font-medium;
-    }
+  /* ── Sidebar channel item ─────────────────────────────── */
+  .ch-item {
+    @apply relative flex w-full items-center gap-2 rounded-lg px-2.5 py-[5px]
+           text-nx-muted cursor-pointer select-none transition-all duration-100;
+  }
+  .ch-item:hover {
+    @apply text-nx-secondary;
+    background: rgba(255,255,255,0.04);
+  }
+  .ch-item.active {
+    @apply text-nx-primary;
+    background: rgba(139,92,246,0.10);
+  }
+  /* Left accent bar */
+  .ch-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 20%;
+    height: 60%;
+    width: 2px;
+    border-radius: 0 2px 2px 0;
+    background: linear-gradient(to bottom, #A78BFA, #8B5CF6);
+  }
+  .ch-item.unread {
+    @apply text-nx-primary;
+  }
 
-    /* Nav rail button */
-    .rail-btn {
-        @apply relative flex h-10 w-10 items-center justify-center rounded-xl text-nx-muted transition-all duration-150 cursor-pointer;
-    }
+  /* ── Message row ──────────────────────────────────────── */
+  .msg-row {
+    @apply relative flex gap-3 rounded-xl px-3 py-1.5
+           transition-colors duration-100;
+  }
+  .msg-row:hover {
+    background: rgba(255,255,255,0.025);
+  }
 
-    .rail-btn:hover {
-        @apply bg-nx-surface2 text-nx-cream;
-    }
-
-    .rail-btn.active {
-        @apply bg-nx-indigo text-white shadow-glow-sm;
-    }
-
-    /* Unread badge */
-    .unread-badge {
-        @apply absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-nx-indigo px-0.5 text-2xs font-semibold text-white;
-    }
+  /* ── Composer ─────────────────────────────────────────── */
+  .composer-wrap {
+    @apply relative rounded-2xl border transition-all duration-200;
+    border-color: rgba(255,255,255,0.07);
+    background: rgba(255,255,255,0.03);
+  }
+  .composer-wrap:focus-within {
+    border-color: rgba(139,92,246,0.35);
+    box-shadow: 0 0 0 3px rgba(139,92,246,0.08);
+  }
 }
 
 /* ─── Utilities ───────────────────────────────────────────── */
 @layer utilities {
-    .no-scrollbar::-webkit-scrollbar {
-        display: none;
-    }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
+  .text-gradient {
+    @apply bg-gradient-to-r from-nx-violet-hi to-nx-cyan bg-clip-text text-transparent;
+  }
 
-    .text-gradient {
-        @apply bg-gradient-to-r from-nx-indigo-l to-nx-mint bg-clip-text text-transparent;
-    }
+  /* Glass panel */
+  .glass {
+    background: rgba(17,17,31,0.85);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+  }
+
+  /* Ultra-thin top separator */
+  .sep-top {
+    border-top: 1px solid rgba(255,255,255,0.045);
+  }
+  .sep-bottom {
+    border-bottom: 1px solid rgba(255,255,255,0.045);
+  }
+
+  /* Active glow ring for cards */
+  .ring-violet {
+    box-shadow: 0 0 0 1px rgba(139,92,246,0.35);
+  }
 }

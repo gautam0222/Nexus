@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, Search } from 'lucide-react'
 import { NavRail } from './NavRail'
 import { Sidebar } from './Sidebar'
 import { Tooltip } from '@/components/ui/Tooltip'
@@ -8,147 +8,156 @@ import { useUIStore } from '@/store/uiStore'
 import { cn } from '@/utils'
 
 /**
- * AppShell — the root layout for the entire app.
+ * AppShell — root layout.
  *
- * Structure:
- * ┌──────────┬──────────┬──────────────────────────┐
- * │ NavRail  │ Sidebar  │   <Outlet /> (content)   │
- * │  64px    │  260px   │        flex-1            │
- * └──────────┴──────────┴──────────────────────────┘
- *
- * The sidebar collapses to 0 when sidebarCollapsed=true.
- * A future right panel will slot in after <Outlet />.
+ * ┌────────┬──────────┬──────────────────────────┐
+ * │NavRail │ Sidebar  │       <Outlet />          │
+ * │ 52px   │  236px   │         flex-1            │
+ * └────────┴──────────┴──────────────────────────┘
  */
 export function AppShell() {
-  const { sidebarCollapsed, toggleSidebar, openSearch, closeSearch, searchOpen } = useUIStore()
+  const {
+    sidebarCollapsed, toggleSidebar,
+    openSearch, closeSearch, searchOpen,
+  } = useUIStore()
 
-  // ─── Global keyboard shortcuts ──────────────────────────────────────────────
+  // ── Global keyboard shortcuts ────────────────────────────────────────────────
   useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
+    function onKey(e: KeyboardEvent) {
       const meta = e.metaKey || e.ctrlKey
-
-      // ⌘K — open search
-      if (meta && e.key === 'k') {
-        e.preventDefault()
-        searchOpen ? closeSearch() : openSearch()
-      }
-
-      // ⌘\ — toggle sidebar
-      if (meta && e.key === '\\') {
-        e.preventDefault()
-        toggleSidebar()
-      }
-
-      // Esc — close overlays
-      if (e.key === 'Escape' && searchOpen) {
-        closeSearch()
-      }
+      if (meta && e.key === 'k')    { e.preventDefault(); searchOpen ? closeSearch() : openSearch() }
+      if (meta && e.key === '\\')   { e.preventDefault(); toggleSidebar() }
+      if (e.key === 'Escape' && searchOpen) closeSearch()
     }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
   }, [searchOpen, openSearch, closeSearch, toggleSidebar])
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-nx-bg">
-
-      {/* ── Nav Rail ─────────────────────────────────────────── */}
+    <div
+      className="flex h-screen w-screen overflow-hidden"
+      style={{ background: '#07070E' }}
+    >
+      {/* Nav Rail */}
       <NavRail />
 
-      {/* ── Sidebar ──────────────────────────────────────────── */}
+      {/* Sidebar with animated collapse */}
       <div
-        className={cn(
-          'h-full flex-shrink-0 transition-[width] duration-200 ease-smooth overflow-hidden',
-          sidebarCollapsed ? 'w-0' : 'w-sidebar'
-        )}
+        className="h-full shrink-0 overflow-hidden"
+        style={{
+          width: sidebarCollapsed ? 0 : 'var(--sidebar-w)',
+          transition: 'width 200ms cubic-bezier(0.4,0,0.2,1)',
+        }}
       >
         <Sidebar />
       </div>
 
-      {/* ── Main content area ────────────────────────────────── */}
-      <main className="relative flex h-full flex-1 flex-col overflow-hidden bg-nx-surface">
-
-        {/* Sidebar toggle button — sits at the top-left of main */}
-        <div className="absolute left-3 top-3 z-10">
+      {/* Main area */}
+      <main
+        className="relative flex h-full flex-1 flex-col overflow-hidden"
+        style={{ background: '#0C0C16' }}
+      >
+        {/* Sidebar toggle */}
+        <div className="absolute left-3 top-3 z-20">
           <Tooltip
             content={sidebarCollapsed ? 'Show sidebar (⌘\\)' : 'Hide sidebar (⌘\\)'}
             side="bottom"
+            delayDuration={400}
           >
             <button
               onClick={toggleSidebar}
-              className={cn(
-                'flex h-7 w-7 items-center justify-center rounded-md',
-                'text-nx-subtle transition-all hover:bg-nx-surface2 hover:text-nx-muted'
-              )}
               aria-label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+              className={cn(
+                'flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-100',
+                'text-nx-ghost hover:bg-nx-overlay hover:text-nx-muted',
+              )}
             >
               {sidebarCollapsed
-                ? <PanelLeftOpen size={16} />
-                : <PanelLeftClose size={16} />
+                ? <PanelLeftOpen  size={15} />
+                : <PanelLeftClose size={15} />
               }
             </button>
           </Tooltip>
         </div>
 
-        {/* Page content rendered by the router */}
+        {/* Page content */}
         <div className="flex h-full flex-col overflow-hidden">
           <Outlet />
         </div>
       </main>
 
-      {/* ── Search overlay (placeholder — will be a full modal in Phase 3) ── */}
+      {/* ── Search overlay ────────────────────────────────────────────────────── */}
       {searchOpen && <SearchOverlay onClose={closeSearch} />}
     </div>
   )
 }
 
-// ─── Minimal search overlay placeholder ──────────────────────────────────────
-// Full Cmd+K palette will be built in Phase 3. This keeps the shortcut functional.
-
+// ─── Search overlay ────────────────────────────────────────────────────────────
 function SearchOverlay({ onClose }: { onClose: () => void }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-[14vh]"
       onClick={onClose}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" />
-
-      {/* Search panel */}
       <div
-        className={cn(
-          'relative w-full max-w-xl rounded-2xl border border-nx-border bg-nx-surface shadow-glow-md',
-          'animate-scale-in overflow-hidden'
-        )}
+        className="absolute inset-0 animate-fade-in"
+        style={{ background: 'rgba(7,7,14,0.80)', backdropFilter: 'blur(8px)' }}
+      />
+
+      {/* Panel */}
+      <div
+        className="relative w-full max-w-[560px] overflow-hidden rounded-2xl animate-scale-in mx-4"
+        style={{
+          background: '#14142A',
+          boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 32px 80px rgba(0,0,0,0.80)',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Search input */}
-        <div className="flex items-center gap-3 border-b border-nx-border px-4 py-3.5">
-          <svg className="h-4 w-4 flex-shrink-0 text-nx-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" strokeLinecap="round" />
-          </svg>
+        {/* Search input row */}
+        <div
+          className="flex items-center gap-3 px-4 py-3.5"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.055)' }}
+        >
+          <Search size={16} className="shrink-0 text-nx-muted" />
           <input
             autoFocus
-            className="flex-1 bg-transparent text-md text-nx-cream placeholder-nx-subtle outline-none"
+            className="flex-1 bg-transparent text-md text-nx-primary placeholder:text-nx-ghost outline-none"
             placeholder="Search messages, channels, people…"
           />
-          <kbd className="rounded border border-nx-border px-1.5 py-0.5 text-xs text-nx-subtle">Esc</kbd>
+          <kbd
+            className="hidden rounded-lg px-2 py-0.5 text-[10px] font-medium text-nx-ghost sm:block"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            Esc
+          </kbd>
         </div>
 
-        {/* Placeholder empty state */}
-        <div className="flex flex-col items-center gap-2 py-10 text-nx-muted">
-          <svg className="h-8 w-8 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" strokeLinecap="round" />
-          </svg>
-          <p className="text-sm">Start typing to search Nexus</p>
-          <p className="text-xs text-nx-subtle">Messages, channels, people, files</p>
+        {/* Empty state */}
+        <div className="flex flex-col items-center gap-2 py-12 text-nx-muted">
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-xl mb-1"
+            style={{ background: 'rgba(139,92,246,0.08)' }}
+          >
+            <Search size={18} className="text-nx-violet-hi opacity-50" />
+          </div>
+          <p className="text-sm font-medium">Start typing to search</p>
+          <p className="text-xs text-nx-ghost">Messages, channels, people, files</p>
         </div>
 
-        {/* Footer hints */}
-        <div className="flex items-center gap-4 border-t border-nx-border px-4 py-2">
-          {[['↵', 'Select'], ['↑↓', 'Navigate'], ['Esc', 'Close']].map(([key, label]) => (
-            <span key={key} className="flex items-center gap-1.5 text-xs text-nx-subtle">
-              <kbd className="rounded border border-nx-border px-1.5 py-0.5 font-mono text-xs">{key}</kbd>
+        {/* Footer */}
+        <div
+          className="flex items-center gap-4 px-4 py-2"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.045)' }}
+        >
+          {[['↵', 'Select'], ['↕', 'Navigate'], ['Esc', 'Close']].map(([key, label]) => (
+            <span key={key} className="flex items-center gap-1.5 text-[10px] text-nx-ghost">
+              <kbd
+                className="rounded px-1.5 py-0.5 font-mono text-[10px] text-nx-muted"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}
+              >
+                {key}
+              </kbd>
               {label}
             </span>
           ))}
