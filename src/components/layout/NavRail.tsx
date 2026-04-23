@@ -21,87 +21,47 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'activity', label: 'Activity',  icon: <Bell size={17} />,          route: ROUTES.ACTIVITY  },
-  { id: 'chat',     label: 'Chat',      icon: <MessageSquare size={17} />, route: ROUTES.CHAT      },
-  { id: 'teams',    label: 'Teams',     icon: <Users size={17} />,         route: ROUTES.TEAMS     },
-  { id: 'calendar', label: 'Calendar',  icon: <CalendarDays size={17} />,  route: ROUTES.CALENDAR  },
-  { id: 'files',    label: 'Files',     icon: <FolderOpen size={17} />,    route: ROUTES.FILES     },
-  { id: 'calls',    label: 'Calls',     icon: <Video size={17} />,         route: ROUTES.CALLS     },
+  { id: 'activity', label: 'Activity',  icon: <Bell         size={16} />, route: ROUTES.ACTIVITY },
+  { id: 'chat',     label: 'Chat',      icon: <MessageSquare size={16} />, route: ROUTES.CHAT     },
+  { id: 'teams',    label: 'Teams',     icon: <Users         size={16} />, route: ROUTES.TEAMS    },
+  { id: 'calendar', label: 'Calendar',  icon: <CalendarDays  size={16} />, route: ROUTES.CALENDAR },
+  { id: 'files',    label: 'Files',     icon: <FolderOpen    size={16} />, route: ROUTES.FILES    },
+  { id: 'calls',    label: 'Calls',     icon: <Video         size={16} />, route: ROUTES.CALLS    },
 ]
 
-// ─── Logo mark ────────────────────────────────────────────────────────────────
+// ─── Logo ─────────────────────────────────────────────────────────────────────
 function LogoMark() {
   return (
-    <div className="relative flex h-8 w-8 items-center justify-center">
-      {/* Glow halo */}
+    <div className="mb-2 flex items-center justify-center">
       <div
-        className="absolute inset-0 rounded-xl opacity-60"
-        style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.45) 0%, transparent 70%)' }}
-      />
-      {/* Icon surface */}
-      <div
-        className="relative flex h-8 w-8 items-center justify-center rounded-xl"
+        className="flex h-9 w-9 items-center justify-center rounded-xl"
         style={{
-          background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
-          boxShadow: '0 0 16px rgba(139,92,246,0.50), inset 0 1px 0 rgba(255,255,255,0.25)',
+          background: 'linear-gradient(135deg, #FF0055 0%, #9D00FF 100%)',
+          boxShadow: '0 0 20px rgba(255,0,85,0.55), 0 0 40px rgba(157,0,255,0.35)',
         }}
       >
-        <span className="text-md font-bold text-white tracking-tight">N</span>
+        <span
+          className="text-md font-black text-white tracking-tighter"
+          style={{ textShadow: '0 0 8px rgba(255,255,255,0.60)' }}
+        >
+          N
+        </span>
       </div>
     </div>
   )
 }
 
-// ─── Single nav rail button ───────────────────────────────────────────────────
-function RailButton({
-  item,
-  isActive,
-  badge,
-  hasMention,
-  onClick,
-}: {
-  item: NavItem
-  isActive: boolean
-  badge?: number
-  hasMention?: boolean
-  onClick: () => void
-}) {
-  return (
-    <Tooltip content={item.label} side="right" delayDuration={300}>
-      <button
-        onClick={onClick}
-        aria-label={item.label}
-        aria-current={isActive ? 'page' : undefined}
-        className={cn('rail-btn focus-ring', isActive && 'active')}
-      >
-        {item.icon}
-
-        {badge !== undefined && badge > 0 && (
-          <span
-            className={cn(
-              'unread-badge',
-              hasMention ? 'bg-nx-red' : 'bg-nx-violet',
-            )}
-          >
-            {badge > 99 ? '99+' : badge}
-          </span>
-        )}
-      </button>
-    </Tooltip>
-  )
-}
-
 // ─── Divider ──────────────────────────────────────────────────────────────────
-function RailDivider() {
+function Dashes() {
   return (
     <div
-      className="my-1 h-px w-7 self-center rounded-full"
-      style={{ background: 'rgba(255,255,255,0.06)' }}
+      className="my-1.5 h-px w-7 self-center rounded-full"
+      style={{ background: 'rgba(0,238,255,0.08)' }}
     />
   )
 }
 
-// ─── NavRail ──────────────────────────────────────────────────────────────────
+// ─── NavRail — RIGHT side ─────────────────────────────────────────────────────
 export function NavRail() {
   const navigate   = useNavigate()
   const location   = useLocation()
@@ -119,30 +79,27 @@ export function NavRail() {
 
   return (
     <aside
-      className="flex h-full w-rail select-none flex-col items-center py-3 gap-0.5"
+      className="flex h-full shrink-0 flex-col items-center py-3 gap-0.5"
       style={{
         width: 'var(--rail-w)',
-        background: 'linear-gradient(180deg, #0C0C16 0%, #11111F 100%)',
-        borderRight: '1px solid rgba(255,255,255,0.045)',
+        background: 'linear-gradient(180deg, #0D0D25 0%, #07071A 100%)',
+        borderLeft: '1px solid rgba(0,238,255,0.06)',
       }}
     >
-      {/* Logo */}
-      <div className="mb-3 flex items-center justify-center">
-        <LogoMark />
-      </div>
+      <LogoMark />
 
       {/* Search */}
-      <Tooltip content="Search  ⌘K" side="right" delayDuration={300}>
+      <Tooltip content="Search  ⌘K" side="left" delayDuration={300}>
         <button
           onClick={openSearch}
           aria-label="Search"
           className="rail-btn focus-ring mb-1"
         >
-          <Search size={17} />
+          <Search size={16} />
         </button>
       </Tooltip>
 
-      <RailDivider />
+      <Dashes />
 
       {/* Nav items */}
       <nav className="flex flex-1 flex-col items-center gap-0.5 pt-1">
@@ -153,47 +110,50 @@ export function NavRail() {
             item.id === 'activity' && totalUnread > 0 ? totalUnread : undefined
 
           return (
-            <RailButton
-              key={item.id}
-              item={item}
-              isActive={isActive}
-              badge={badge}
-              hasMention={hasMention}
-              onClick={() => handleNav(item)}
-            />
+            <Tooltip key={item.id} content={item.label} side="left" delayDuration={300}>
+              <button
+                onClick={() => handleNav(item)}
+                aria-label={item.label}
+                aria-current={isActive ? 'page' : undefined}
+                className={cn('rail-btn focus-ring', isActive && 'active')}
+              >
+                {item.icon}
+                {badge !== undefined && (
+                  <span
+                    className={cn('unread-badge', hasMention ? 'bg-nx-pink' : 'bg-nx-cyan text-black')}
+                  >
+                    {badge > 99 ? '99+' : badge}
+                  </span>
+                )}
+              </button>
+            </Tooltip>
           )
         })}
       </nav>
 
-      {/* Bottom actions */}
+      {/* Bottom controls */}
       <div className="flex flex-col items-center gap-1">
-        <RailDivider />
+        <Dashes />
 
-        <Tooltip content="New" side="right" delayDuration={300}>
+        <Tooltip content="New" side="left" delayDuration={300}>
           <button className="rail-btn focus-ring" aria-label="Create new">
-            <Plus size={17} />
+            <Plus size={16} />
           </button>
         </Tooltip>
 
-        <Tooltip content="Settings" side="right" delayDuration={300}>
+        <Tooltip content="Settings" side="left" delayDuration={300}>
           <button
             onClick={() => navigate(ROUTES.SETTINGS)}
             aria-label="Settings"
-            className={cn(
-              'rail-btn focus-ring',
-              location.pathname.startsWith('/settings') && 'active',
-            )}
+            className={cn('rail-btn focus-ring', location.pathname.startsWith('/settings') && 'active')}
           >
-            <Settings size={17} />
+            <Settings size={16} />
           </button>
         </Tooltip>
 
         {user && (
-          <Tooltip content={`${user.name} · ${user.status}`} side="right" delayDuration={300}>
-            <button
-              className="mt-1 rounded-xl focus-ring"
-              aria-label="Your profile"
-            >
+          <Tooltip content={`${user.name} // ${user.status}`} side="left" delayDuration={300}>
+            <button className="mt-1 rounded-xl focus-ring" aria-label="Your profile">
               <Avatar
                 initials={user.initials}
                 src={user.avatar}

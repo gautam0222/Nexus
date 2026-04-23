@@ -1,9 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import {
-  Bell, Hash, MoreHorizontal, Pin,
-  Search, SendHorizonal, Smile, Users,
-} from 'lucide-react'
-import { Avatar } from '@/components/ui/Avatar'
+import { MoreHorizontal, Search, SendHorizonal, Smile, Users } from 'lucide-react'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { useChannelStore } from '@/store/channelStore'
 import { useMessageStore } from '@/store/message'
@@ -11,164 +7,182 @@ import { useUIStore } from '@/store/uiStore'
 import { formatTime, formatDateDivider, cn } from '@/utils'
 import type { Message, Reaction } from '@/types'
 
-// ─── Tiny icon button ─────────────────────────────────────────────────────────
-function IconBtn({
-  children, onClick, label, active,
-}: {
-  children: React.ReactNode
-  onClick?: () => void
-  label: string
-  active?: boolean
-}) {
-  return (
-    <Tooltip content={label} side="bottom" delayDuration={400}>
-      <button
-        onClick={onClick}
-        aria-label={label}
-        className={cn(
-          'flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-100',
-          'text-nx-muted hover:bg-nx-overlay hover:text-nx-secondary',
-          active && 'bg-nx-violet-dim text-nx-violet-hi',
-        )}
-      >
-        {children}
-      </button>
-    </Tooltip>
-  )
+// ─── User neon palette ────────────────────────────────────────────────────────
+const USER_NEON: Record<string, { hex: string; glow: string; label: string }> = {
+  u1: { hex: '#FF0055', glow: 'rgba(255,0,85,0.28)',   label: 'PINK'   },
+  u2: { hex: '#00EEFF', glow: 'rgba(0,238,255,0.28)',  label: 'CYAN'   },
+  u3: { hex: '#BBFF00', glow: 'rgba(187,255,0,0.25)',  label: 'LIME'   },
+  u4: { hex: '#9D00FF', glow: 'rgba(157,0,255,0.28)',  label: 'PURPLE' },
+  u5: { hex: '#FF8800', glow: 'rgba(255,136,0,0.28)',  label: 'AMBER'  },
+  u6: { hex: '#00FFB2', glow: 'rgba(0,255,178,0.25)',  label: 'TEAL'   },
+}
+function getUserNeon(userId: string) {
+  return USER_NEON[userId] ?? USER_NEON.u2
 }
 
-// ─── Channel header ────────────────────────────────────────────────────────────
-function ChannelHeader() {
+// ─── Floating glass HUD header ────────────────────────────────────────────────
+function FloatingHUD() {
   const { activeChannelId, getChannel } = useChannelStore()
-  const { toggleRightPanel, rightPanelOpen } = useUIStore()
+  const { toggleRightPanel, rightPanelOpen, openSearch } = useUIStore()
   const channel = activeChannelId ? getChannel(activeChannelId) : null
   if (!channel) return null
 
   return (
-    <header
-      className="flex shrink-0 items-center gap-3 px-5 py-2.5 pl-12"
-      style={{ borderBottom: '1px solid rgba(255,255,255,0.045)' }}
-    >
-      {/* Left: channel name */}
-      <div className="flex flex-1 items-center gap-2 overflow-hidden">
-        <Hash size={15} strokeWidth={2.5} className="shrink-0 text-nx-muted" />
-        <h1 className="truncate text-md font-semibold text-nx-primary leading-none">
+    <div className="pointer-events-none absolute inset-x-3 top-3 z-30 flex items-center gap-2">
+      {/* Channel pill — glass */}
+      <div
+        className="hud-glass pointer-events-auto flex flex-1 items-center gap-2.5 overflow-hidden px-3 py-2"
+        style={{ minWidth: 0 }}
+      >
+        {/* Neon hash cursor */}
+        <span
+          className="shrink-0 font-mono text-sm font-bold"
+          style={{ color: '#00EEFF', textShadow: '0 0 10px rgba(0,238,255,0.80)' }}
+        >
+          #
+        </span>
+        <span className="truncate font-mono text-sm font-bold text-white">
           {channel.name}
-        </h1>
+        </span>
         {channel.description && (
           <>
-            <span className="shrink-0 text-nx-ghost">│</span>
-            <p className="truncate text-sm text-nx-muted">{channel.description}</p>
+            <span className="shrink-0 font-mono text-xs text-nx-ghost">──</span>
+            <span className="truncate font-mono text-xs text-nx-dim">{channel.description}</span>
           </>
         )}
-      </div>
-
-      {/* Right: action strip */}
-      <div className="flex shrink-0 items-center gap-0.5">
-        <IconBtn label="Search channel"><Search size={14} /></IconBtn>
-        <IconBtn label="Pinned messages"><Pin size={14} /></IconBtn>
-        <IconBtn label="Notifications"><Bell size={14} /></IconBtn>
-        <IconBtn
-          label={rightPanelOpen ? 'Hide members' : 'Show members'}
-          onClick={toggleRightPanel}
-          active={rightPanelOpen}
-        >
-          <Users size={14} />
-        </IconBtn>
-        {/* Member count pill */}
+        {/* Member count chip */}
         <span
-          className="ml-1 rounded-full px-2 py-0.5 text-[10px] font-medium text-nx-muted"
-          style={{ background: 'rgba(255,255,255,0.05)' }}
+          className="ml-auto shrink-0 rounded px-1.5 py-0.5 font-mono text-[9px]"
+          style={{
+            background: 'rgba(0,238,255,0.08)',
+            border: '1px solid rgba(0,238,255,0.15)',
+            color: '#00EEFF',
+          }}
         >
-          {channel.memberCount}
+          {channel.memberCount}m
         </span>
       </div>
-    </header>
+
+      {/* Action buttons — glass pills */}
+      <div className="hud-glass pointer-events-auto flex shrink-0 items-center gap-0.5 px-1.5 py-1">
+        <Tooltip content="Search" side="bottom" delayDuration={400}>
+          <button
+            onClick={openSearch}
+            className="flex h-6 w-6 items-center justify-center rounded text-nx-dim transition-colors hover:text-nx-cyan"
+          >
+            <Search size={13} />
+          </button>
+        </Tooltip>
+        <Tooltip content="Members" side="bottom" delayDuration={400}>
+          <button
+            onClick={toggleRightPanel}
+            className={cn(
+              'flex h-6 w-6 items-center justify-center rounded transition-colors',
+              rightPanelOpen ? 'text-nx-cyan' : 'text-nx-dim hover:text-nx-cyan',
+            )}
+          >
+            <Users size={13} />
+          </button>
+        </Tooltip>
+      </div>
+    </div>
   )
 }
 
 // ─── Date divider ──────────────────────────────────────────────────────────────
 function DateDivider({ date }: { date: string }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
-      <div className="h-px flex-1" style={{ background: 'rgba(255,255,255,0.045)' }} />
+    <div className="flex items-center gap-3 px-2 py-3">
+      <div className="h-px flex-1" style={{ background: 'rgba(0,238,255,0.06)' }} />
       <span
-        className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-nx-muted"
-        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.055)' }}
+        className="rounded-full px-3 py-0.5 font-mono text-[9px] tracking-widest text-nx-dim"
+        style={{
+          background: 'rgba(0,238,255,0.05)',
+          border: '1px solid rgba(0,238,255,0.10)',
+        }}
       >
-        {formatDateDivider(date)}
+        {formatDateDivider(date).toUpperCase()}
       </span>
-      <div className="h-px flex-1" style={{ background: 'rgba(255,255,255,0.045)' }} />
+      <div className="h-px flex-1" style={{ background: 'rgba(0,238,255,0.06)' }} />
     </div>
   )
 }
 
-// ─── Reaction pill ────────────────────────────────────────────────────────────
-function ReactionPill({ r, onClick }: { r: Reaction; onClick: () => void }) {
+// ─── Reaction pill ─────────────────────────────────────────────────────────────
+function ReactionPill({
+  r,
+  onClick,
+  userColor,
+}: {
+  r: Reaction
+  onClick: () => void
+  userColor: string
+}) {
+  const [hov, setHov] = useState(false)
+
   return (
     <button
       onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
       className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-all duration-100"
       style={{
-        background: 'rgba(255,255,255,0.05)',
-        border: '1px solid rgba(255,255,255,0.07)',
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.40)'
-        ;(e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.10)'
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.07)'
-        ;(e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'
+        background: hov ? `${userColor}18` : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${hov ? userColor + '55' : 'rgba(255,255,255,0.07)'}`,
+        boxShadow: hov ? `0 0 8px ${userColor}30` : 'none',
+        transform: hov ? 'scale(1.06)' : 'scale(1)',
       }}
     >
-      <span className="leading-none">{r.emoji}</span>
-      <span className="font-medium text-nx-secondary">{r.count}</span>
+      <span>{r.emoji}</span>
+      <span className="font-mono text-[10px] text-nx-fog">{r.count}</span>
     </button>
   )
 }
 
-// ─── Hover action bar ─────────────────────────────────────────────────────────
+// ─── Hover action bar ──────────────────────────────────────────────────────────
 function HoverBar({
   onReact,
   onReply,
+  userColor,
 }: {
   onReact: (emoji: string) => void
   onReply: () => void
+  userColor: string
 }) {
   return (
     <div
-      className="absolute right-3 top-0.5 hidden items-center gap-px rounded-xl px-1 py-0.5 group-hover:flex animate-fade-in"
+      className="absolute right-3 -top-4 hidden items-center gap-px rounded-xl px-1.5 py-1 group-hover:flex animate-fade-in"
       style={{
-        background: '#1D1D32',
-        border: '1px solid rgba(255,255,255,0.07)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.60)',
+        background: '#0D0D25',
+        border: '1px solid rgba(0,238,255,0.12)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.85)',
       }}
     >
-      {['👍', '❤️', '😂', '🔥'].map((emoji) => (
+      {['👍', '❤️', '😂', '🔥', '🚀'].map((emoji) => (
         <button
           key={emoji}
           onClick={() => onReact(emoji)}
-          className="flex items-center justify-center rounded-lg px-1.5 py-1 text-sm transition-colors hover:bg-nx-overlay active:scale-90"
+          className="rounded-lg px-1 py-0.5 text-sm transition-all hover:bg-nx-overlay active:scale-90"
         >
           {emoji}
         </button>
       ))}
-      <div className="mx-0.5 h-4 w-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+      <div className="mx-1 h-3 w-px" style={{ background: 'rgba(0,238,255,0.10)' }} />
       <button
         onClick={onReply}
-        className="rounded-lg px-2 py-1 text-xs font-medium text-nx-muted transition-colors hover:bg-nx-overlay hover:text-nx-secondary"
+        className="rounded-lg px-2 py-0.5 font-mono text-[10px] transition-colors hover:bg-nx-overlay"
+        style={{ color: userColor }}
       >
-        Reply
+        REPLY
       </button>
-      <button className="rounded-lg p-1 text-nx-muted transition-colors hover:bg-nx-overlay hover:text-nx-secondary">
-        <MoreHorizontal size={13} />
+      <button className="rounded-lg p-0.5 text-nx-dim hover:bg-nx-overlay hover:text-nx-fog">
+        <MoreHorizontal size={12} />
       </button>
     </div>
   )
 }
 
-// ─── Single message ────────────────────────────────────────────────────────────
+// ─── Message card ──────────────────────────────────────────────────────────────
 function MessageItem({
   message,
   isGrouped,
@@ -180,77 +194,97 @@ function MessageItem({
 }) {
   const { openThread } = useUIStore()
   const { addReaction } = useMessageStore()
+  const neon = getUserNeon(message.authorId)
 
   const handleReact = (emoji: string) => addReaction(channelId, message.id, emoji)
 
   return (
-    <div className={cn('msg-row group relative', !isGrouped && 'mt-2')}>
-
-      {/* Avatar column */}
-      <div className="w-8 shrink-0 pt-0.5">
-        {!isGrouped ? (
-          <Avatar initials={message.author.initials} name={message.author.name} size="sm" />
-        ) : (
-          // Timestamp visible on hover
-          <span className="block text-right text-[10px] leading-tight text-nx-ghost opacity-0 transition-opacity group-hover:opacity-100 pt-1">
+    <div
+      className={cn('msg-card group relative', !isGrouped && 'mt-2')}
+      style={{
+        borderLeftColor: neon.hex,
+        boxShadow: `inset 3px 0 16px ${neon.glow}`,
+      }}
+    >
+      {/* Header row */}
+      {!isGrouped && (
+        <div className="mb-1 flex items-baseline gap-3">
+          {/* Author name — neon colored */}
+          <span
+            className="text-sm font-bold"
+            style={{
+              color: neon.hex,
+              textShadow: `0 0 10px ${neon.glow}`,
+            }}
+          >
+            {message.author.name.toUpperCase()}
+          </span>
+          {/* Timestamp — monospace */}
+          <span className="font-mono text-[10px] text-nx-dim">
             {formatTime(message.createdAt)}
           </span>
-        )}
-      </div>
-
-      {/* Message body */}
-      <div className="min-w-0 flex-1 overflow-hidden">
-        {!isGrouped && (
-          <div className="mb-0.5 flex items-baseline gap-2">
-            <span className="text-sm font-semibold text-nx-primary">
-              {message.author.name}
+          {/* System labels */}
+          {message.isPinned && (
+            <span className="font-mono text-[9px]" style={{ color: '#BBFF00', textShadow: '0 0 6px rgba(187,255,0,0.60)' }}>
+              ◆ PINNED
             </span>
-            <span className="text-[10px] text-nx-muted">
-              {formatTime(message.createdAt)}
-            </span>
-            {message.isPinned && <Pin size={9} className="text-nx-amber" />}
-            {message.isEdited && (
-              <span className="text-[10px] text-nx-ghost italic">(edited)</span>
-            )}
-          </div>
-        )}
-
-        {/* Content */}
-        <p className="whitespace-pre-wrap break-words text-base leading-relaxed text-nx-secondary">
-          {message.content}
-        </p>
-
-        {/* Reactions */}
-        {message.reactions.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {message.reactions.map((r: Reaction) => (
-              <ReactionPill key={r.emoji} r={r} onClick={() => handleReact(r.emoji)} />
-            ))}
-            <button
-              className="flex items-center rounded-full px-2 py-0.5 text-xs text-nx-ghost transition-colors hover:text-nx-muted"
-              style={{ border: '1px dashed rgba(255,255,255,0.08)' }}
-            >
-              <Smile size={11} />
-            </button>
-          </div>
-        )}
-
-        {/* Thread replies */}
-        {message.replyCount > 0 && (
-          <button
-            onClick={() => openThread(message.id)}
-            className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-nx-violet-hi hover:underline underline-offset-2"
+          )}
+          {message.isEdited && (
+            <span className="font-mono text-[9px] text-nx-ghost italic">[edited]</span>
+          )}
+          {/* User color label — far right */}
+          <span
+            className="ml-auto font-mono text-[8px] tracking-widest opacity-30"
+            style={{ color: neon.hex }}
           >
-            <span>{message.replyCount} {message.replyCount === 1 ? 'reply' : 'replies'}</span>
-          </button>
-        )}
-      </div>
+            {neon.label}
+          </span>
+        </div>
+      )}
 
-      {/* Hover action bar */}
-      <HoverBar
-        onReact={handleReact}
-        onReply={() => openThread(message.id)}
-      />
+      {/* Grouped: just small timestamp on hover */}
+      {isGrouped && (
+        <div className="absolute left-0 -top-0 pl-4 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="font-mono text-[9px] text-nx-ghost">{formatTime(message.createdAt)}</span>
+        </div>
+      )}
+
+      {/* Message text */}
+      <p className="text-sm leading-relaxed text-nx-fog">{message.content}</p>
+
+      {/* Reactions */}
+      {message.reactions.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {message.reactions.map((r: Reaction) => (
+            <ReactionPill
+              key={r.emoji}
+              r={r}
+              onClick={() => handleReact(r.emoji)}
+              userColor={neon.hex}
+            />
+          ))}
+          <button
+            className="flex items-center rounded-full px-2 py-0.5 font-mono text-[10px] text-nx-ghost transition-colors hover:text-nx-dim"
+            style={{ border: '1px dashed rgba(0,238,255,0.10)' }}
+          >
+            <Smile size={10} />
+          </button>
+        </div>
+      )}
+
+      {/* Thread replies */}
+      {message.replyCount > 0 && (
+        <button
+          onClick={() => openThread(message.id)}
+          className="mt-1.5 font-mono text-[10px] transition-colors hover:underline underline-offset-2"
+          style={{ color: neon.hex, textShadow: `0 0 6px ${neon.glow}` }}
+        >
+          ⌥ {message.replyCount} {message.replyCount === 1 ? 'reply' : 'replies'}
+        </button>
+      )}
+
+      {/* Hover bar */}
+      <HoverBar onReact={handleReact} onReply={() => openThread(message.id)} userColor={neon.hex} />
     </div>
   )
 }
@@ -261,37 +295,31 @@ function MessageList({ channelId }: { channelId: string }) {
   const messages  = getChannelMessages(channelId)
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  // Scroll to bottom on new message
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages.length])
 
   if (messages.length === 0) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 pt-16">
         <div
-          className="flex h-14 w-14 items-center justify-center rounded-2xl"
-          style={{ background: 'rgba(139,92,246,0.10)', border: '1px solid rgba(139,92,246,0.20)' }}
+          className="font-mono text-[10px] tracking-widest"
+          style={{ color: 'rgba(0,238,255,0.20)' }}
         >
-          <Hash size={26} className="text-nx-violet-hi" />
+          ─── CHANNEL INITIALIZED ───
         </div>
-        <div>
-          <p className="text-md font-semibold text-nx-primary">No messages yet</p>
-          <p className="mt-1 text-sm text-nx-muted">Be the first to say something.</p>
-        </div>
+        <p className="font-mono text-xs text-nx-ghost">No transmissions yet. Be the first.</p>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto px-3 py-2">
+    <div className="flex flex-1 flex-col overflow-y-auto px-3 pt-16 pb-2 no-scrollbar">
       {messages.map((msg, i) => {
         const prev = messages[i - 1]
-
         const showDate =
           !prev ||
           new Date(msg.createdAt).toDateString() !== new Date(prev.createdAt).toDateString()
-
         const isGrouped =
           !showDate &&
           !!prev &&
@@ -305,16 +333,18 @@ function MessageList({ channelId }: { channelId: string }) {
           </div>
         )
       })}
-      <div ref={bottomRef} className="h-2" />
+      <div ref={bottomRef} className="h-1" />
     </div>
   )
 }
 
 // ─── Composer ─────────────────────────────────────────────────────────────────
 function Composer({ channelId, channelName }: { channelId: string; channelName: string }) {
-  const [value, setValue]    = useState('')
-  const { sendMessage }      = useMessageStore()
-  const textareaRef          = useRef<HTMLTextAreaElement>(null)
+  const [value, setValue]   = useState('')
+  const { sendMessage }     = useMessageStore()
+  const textareaRef         = useRef<HTMLTextAreaElement>(null)
+  const charCount           = value.length
+  const maxChars            = 2000
 
   const submit = useCallback(() => {
     const trimmed = value.trim()
@@ -328,69 +358,104 @@ function Composer({ channelId, channelName }: { channelId: string; channelName: 
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() }
   }
 
-  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (e.target.value.length > maxChars) return
     setValue(e.target.value)
     const el = e.target
     el.style.height = 'auto'
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`
   }
 
-  const canSend = value.trim().length > 0
+  const canSend    = value.trim().length > 0
+  const nearLimit  = charCount > maxChars * 0.85
+  const overLimit  = charCount > maxChars * 0.95
 
   return (
-    <div className="shrink-0 px-4 pb-4 pt-2">
+    <div className="shrink-0 px-3 pb-3 pt-1">
       <div className="composer-wrap px-3 py-2.5">
+        {/* Prompt prefix + textarea */}
         <div className="flex items-end gap-2">
+          {/* Terminal prompt */}
+          <span
+            className="mb-[1px] shrink-0 font-mono text-sm font-bold"
+            style={{
+              color: '#00EEFF',
+              textShadow: '0 0 8px rgba(0,238,255,0.70)',
+            }}
+          >
+            $
+          </span>
+
           <textarea
             ref={textareaRef}
             rows={1}
             value={value}
-            onChange={handleInput}
+            onChange={handleChange}
             onKeyDown={handleKeyDown}
-            placeholder={`Message #${channelName}`}
-            className="max-h-40 flex-1 resize-none bg-transparent text-base text-nx-primary leading-relaxed outline-none placeholder:text-nx-ghost"
+            placeholder={`transmit to #${channelName}...`}
+            className="max-h-40 flex-1 resize-none bg-transparent font-mono text-sm text-white leading-relaxed outline-none placeholder:font-mono placeholder:text-nx-ghost"
           />
-          {/* Send button — only glows when there's content */}
-          <Tooltip content="Send · Enter" side="top" delayDuration={400}>
+
+          {/* Char count ring */}
+          {charCount > 0 && (
+            <span
+              className={cn(
+                'mb-0.5 shrink-0 font-mono text-[9px] transition-colors',
+                overLimit ? 'text-nx-pink' : nearLimit ? 'text-nx-amber' : 'text-nx-ghost',
+              )}
+              style={overLimit ? { textShadow: '0 0 6px rgba(255,0,85,0.60)' } : {}}
+            >
+              {maxChars - charCount}
+            </span>
+          )}
+
+          {/* Send */}
+          <Tooltip content="TRANSMIT · Enter" side="top" delayDuration={400}>
             <button
               onClick={submit}
               disabled={!canSend}
               className={cn(
-                'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all duration-150',
-                canSend
-                  ? 'text-white active:scale-95'
-                  : 'cursor-not-allowed opacity-30',
+                'mb-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all duration-150',
+                canSend ? 'active:scale-90' : 'cursor-not-allowed opacity-20',
               )}
               style={canSend ? {
-                background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
-                boxShadow: '0 0 16px rgba(139,92,246,0.50)',
-              } : {
-                background: 'rgba(255,255,255,0.04)',
-              }}
+                background: 'linear-gradient(135deg, #FF0055, #9D00FF)',
+                boxShadow: '0 0 16px rgba(255,0,85,0.55), 0 0 30px rgba(157,0,255,0.35)',
+              } : { background: 'rgba(255,255,255,0.04)' }}
             >
-              <SendHorizonal size={15} />
+              <SendHorizonal size={14} className="text-white" />
             </button>
           </Tooltip>
         </div>
       </div>
-      {/* Hints */}
-      <p className="mt-1.5 px-1 text-[10px] text-nx-ghost">
-        <kbd className="rounded border border-nx-edge px-1 font-mono text-nx-ghost">Enter</kbd> send
-        &nbsp;·&nbsp;
-        <kbd className="rounded border border-nx-edge px-1 font-mono text-nx-ghost">⇧ Enter</kbd> new line
-      </p>
+
+      {/* Status bar */}
+      <div className="mt-1 flex items-center gap-3 px-1">
+        <span className="font-mono text-[9px] text-nx-ghost">
+          <kbd className="rounded border border-nx-edge px-1">ENTER</kbd> TRANSMIT
+          &nbsp;·&nbsp;
+          <kbd className="rounded border border-nx-edge px-1">⇧ ENTER</kbd> NEW LINE
+        </span>
+        <span className="ml-auto font-mono text-[8px] text-nx-ghost">
+          NEXUS // HYPERCORE
+        </span>
+      </div>
     </div>
   )
 }
 
-// ─── Chat page root ────────────────────────────────────────────────────────────
+// ─── Chat page root ─────────────────────────────────────────────────────────────
 export default function ChatPage() {
   const { activeChannelId, getChannel } = useChannelStore()
   const channel = activeChannelId ? getChannel(activeChannelId) : null
 
   return (
-    <div className="flex h-full flex-col bg-nx-base">
-      <ChannelHeader />
+    <div
+      className="relative flex h-full flex-col"
+      style={{ background: '#07071A' }}
+    >
+      {/* Floating HUD header — overlays messages */}
+      <FloatingHUD />
 
       {activeChannelId ? (
         <>
@@ -401,8 +466,11 @@ export default function ChatPage() {
           />
         </>
       ) : (
-        <div className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-nx-muted">Select a channel to start chatting</p>
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 pt-16">
+          <span className="font-mono text-[10px] tracking-widest" style={{ color: 'rgba(0,238,255,0.20)' }}>
+            ─── SELECT CHANNEL ───
+          </span>
+          <p className="font-mono text-xs text-nx-ghost">Choose a channel from the left panel</p>
         </div>
       )}
     </div>

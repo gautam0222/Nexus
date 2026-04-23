@@ -1,31 +1,50 @@
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  ChevronDown, Hash, Lock,
-  Megaphone, MoreHorizontal, Plus, Volume2,
-} from 'lucide-react'
+import { Hash, Lock, Megaphone, Plus, Volume2, PanelLeftClose } from 'lucide-react'
 import { MOCK_DM_THREADS } from '@/mockData'
-import { Avatar } from '@/components/ui/Avatar'
-import { UnreadBadge } from '@/components/ui/Badge'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { useChannelStore } from '@/store/channelStore'
-import { useUIStore } from '@/store/uiStore'
 import type { Channel, ChannelType, Team } from '@/types'
 import { cn, truncate } from '@/utils'
 
-// ─── Channel type icon ────────────────────────────────────────────────────────
-function ChannelIcon({ type, isPrivate }: { type: ChannelType; isPrivate: boolean }) {
-  const cls = 'shrink-0 text-nx-muted'
-  if (isPrivate)              return <Lock     size={12} className={cls} />
-  if (type === 'announcement') return <Megaphone size={12} className={cls} />
-  if (type === 'voice')        return <Volume2  size={12} className={cls} />
-  return <Hash size={12} className={cls} />
+// ─── User neon colors (deterministic per user) ───────────────────────────────
+const USER_COLORS: Record<string, string> = {
+  u1: '#FF0055', u2: '#00EEFF', u3: '#BBFF00',
+  u4: '#9D00FF', u5: '#FF8800', u6: '#00FFB2',
+}
+function getUserColor(userId: string) {
+  return USER_COLORS[userId] ?? '#00EEFF'
 }
 
-// ─── Channel list item ────────────────────────────────────────────────────────
+// ─── Channel type icon ────────────────────────────────────────────────────────
+function ChIcon({ type, isPrivate }: { type: ChannelType; isPrivate: boolean }) {
+  const cls = 'shrink-0 text-nx-dim'
+  if (isPrivate)              return <Lock      size={10} className={cls} />
+  if (type === 'announcement') return <Megaphone size={10} className={cls} />
+  if (type === 'voice')        return <Volume2   size={10} className={cls} />
+  return <Hash size={10} className={cls} />
+}
+
+// ─── Cursor prefix span ───────────────────────────────────────────────────────
+function Cursor({ active, hovered }: { active: boolean; hovered: boolean }) {
+  const char = active ? '»' : hovered ? '>' : ' '
+  const color = (active || hovered) ? '#00EEFF' : 'transparent'
+  return (
+    <span
+      className="w-3 shrink-0 font-mono text-[10px] transition-all duration-100"
+      style={{ color, textShadow: (active || hovered) ? '0 0 8px rgba(0,238,255,0.80)' : 'none' }}
+    >
+      {char}
+    </span>
+  )
+}
+
+// ─── Terminal channel item ────────────────────────────────────────────────────
 function ChannelItem({ channel }: { channel: Channel }) {
   const navigate = useNavigate()
   const { activeChannelId, setActiveChannel, markChannelRead } = useChannelStore()
+  const [hovered, setHovered] = useState(false)
+
   const isActive  = activeChannelId === channel.id
   const hasUnread = channel.unreadCount > 0
 
@@ -38,88 +57,86 @@ function ChannelItem({ channel }: { channel: Channel }) {
   return (
     <button
       onClick={handleClick}
-      className={cn(
-        'ch-item group',
-        isActive  && 'active',
-        hasUnread && !isActive && 'unread',
-      )}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className={cn('ch-item', isActive && 'active', hasUnread && !isActive && 'unread')}
     >
-      <ChannelIcon type={channel.type} isPrivate={channel.isPrivate} />
+      <Cursor active={isActive} hovered={hovered} />
+      <ChIcon type={channel.type} isPrivate={channel.isPrivate} />
 
-      <span className={cn(
-        'flex-1 truncate text-left text-sm leading-none',
-        hasUnread && !isActive && 'font-semibold',
-      )}>
+      <span className={cn('flex-1 truncate text-left', hasUnread && !isActive && 'font-semibold')}>
         {channel.name}
       </span>
 
-      {/* Hover: more options */}
-      <span className="opacity-0 group-hover:opacity-100 transition-opacity rounded p-0.5 hover:bg-nx-overlay">
-        <MoreHorizontal size={11} className="text-nx-muted" />
-      </span>
-
-      {/* Unread badge */}
+      {/* Neon heat bar instead of badge */}
       {hasUnread && !isActive && (
-        <UnreadBadge count={channel.unreadCount} mention={channel.hasMention} />
+        <div className="flex items-center gap-1.5 shrink-0">
+          <div
+            className="h-[3px] rounded-full"
+            style={{
+              width: `${Math.min(channel.unreadCount * 5, 28)}px`,
+              background: channel.hasMention ? '#FF0055' : '#00EEFF',
+              boxShadow: channel.hasMention
+                ? '0 0 6px rgba(255,0,85,0.70)'
+                : '0 0 6px rgba(0,238,255,0.70)',
+            }}
+          />
+          <span
+            className="font-mono text-[9px]"
+            style={{ color: channel.hasMention ? '#FF0055' : '#00EEFF' }}
+          >
+            {channel.unreadCount}
+          </span>
+        </div>
       )}
     </button>
   )
 }
 
-// ─── Collapsible section ──────────────────────────────────────────────────────
-function SidebarSection({
-  title,
-  children,
-  onAdd,
-  addLabel = 'Add',
-  defaultOpen = true,
-}: {
-  title: string
-  children: ReactNode
-  onAdd?: () => void
-  addLabel?: string
-  defaultOpen?: boolean
-}) {
-  const [open, setOpen] = useState(defaultOpen)
+// ─── DM Item ──────────────────────────────────────────────────────────────────
+function DMItem({ thread }: { thread: (typeof MOCK_DM_THREADS)[number] }) {
+  const navigate = useNavigate()
+  const { activeChannelId, setActiveChannel } = useChannelStore()
+  const [hovered, setHovered] = useState(false)
+
+  const other     = thread.participants[1]
+  const isActive  = activeChannelId === thread.id
+  const hasUnread = thread.unreadCount > 0
+  const color     = getUserColor(other.id)
 
   return (
-    <div className="flex flex-col gap-px">
-      {/* Section header */}
-      <div className="group flex items-center justify-between px-1 pt-4 pb-1">
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-nx-ghost transition-colors hover:text-nx-muted"
+    <button
+      onClick={() => { setActiveChannel(thread.id); navigate(`/dm/${other.id}`) }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className={cn('ch-item', isActive && 'active', hasUnread && !isActive && 'unread')}
+    >
+      <Cursor active={isActive} hovered={hovered} />
+      {/* Status dot with neon color */}
+      <span
+        className="h-[6px] w-[6px] shrink-0 rounded-full"
+        style={{
+          background: other.status === 'online' ? '#00EEFF' : other.status === 'busy' ? '#FF0055' : '#44446A',
+          boxShadow: other.status === 'online' ? '0 0 6px rgba(0,238,255,0.70)' : 'none',
+        }}
+      />
+      <span className={cn('flex-1 truncate text-left', hasUnread && !isActive && 'font-semibold')}>
+        {other.name}
+      </span>
+      {hasUnread && !isActive && (
+        <span
+          className="font-mono text-[9px]"
+          style={{ color, textShadow: `0 0 6px ${color}` }}
         >
-          <ChevronDown
-            size={10}
-            className={cn('transition-transform duration-150', !open && '-rotate-90')}
-          />
-          {title}
-        </button>
-        {onAdd && (
-          <Tooltip content={addLabel} side="top" delayDuration={400}>
-            <button
-              onClick={onAdd}
-              aria-label={addLabel}
-              className="rounded-md p-0.5 text-nx-ghost opacity-0 transition-all group-hover:opacity-100 hover:bg-nx-overlay hover:text-nx-muted"
-            >
-              <Plus size={12} />
-            </button>
-          </Tooltip>
-        )}
-      </div>
-
-      {open && (
-        <div className="animate-slide-right flex flex-col gap-px">
-          {children}
-        </div>
+          {thread.unreadCount}
+        </span>
       )}
-    </div>
+    </button>
   )
 }
 
-// ─── Team / workspace switcher ────────────────────────────────────────────────
-function WorkspaceHeader({
+// ─── Team switcher ────────────────────────────────────────────────────────────
+function TeamDropdown({
   teams,
   activeTeamId,
   onSelect,
@@ -132,78 +149,69 @@ function WorkspaceHeader({
   const active = teams.find((t) => t.id === activeTeamId)
 
   return (
-    <div className="relative px-2 pb-2 pt-3">
+    <div className="relative px-2 pt-2 pb-1">
       <button
         onClick={() => setOpen((v) => !v)}
-        className={cn(
-          'group flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5',
-          'transition-colors hover:bg-nx-overlay',
-          open && 'bg-nx-overlay',
-        )}
+        className="holo-chip flex w-full items-center gap-2.5 rounded-xl px-3 py-2 transition-all"
       >
-        {/* Team avatar dot */}
-        <div
-          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[9px] font-bold text-white shadow-glow-sm"
-          style={{ background: active?.color ?? '#8B5CF6' }}
+        {/* Team name */}
+        <div className="flex flex-1 flex-col items-start overflow-hidden">
+          <span className="font-mono text-[9px] tracking-widest text-nx-dim">NEXUS</span>
+          <span
+            className="truncate font-mono text-xs font-bold text-white"
+            style={{ textShadow: '0 0 10px rgba(0,238,255,0.40)' }}
+          >
+            {active?.name.toUpperCase() ?? 'SELECT TEAM'}
+          </span>
+        </div>
+        <span
+          className="shrink-0 rounded px-1.5 py-0.5 font-mono text-[9px]"
+          style={{ background: 'rgba(0,238,255,0.10)', border: '1px solid rgba(0,238,255,0.20)', color: '#00EEFF' }}
         >
-          {active?.name.charAt(0)}
-        </div>
-
-        <div className="flex flex-1 flex-col items-start overflow-hidden leading-none">
-          <span className="truncate text-sm font-semibold text-nx-primary">
-            {active?.name ?? 'Select team'}
-          </span>
-          <span className="mt-0.5 text-[10px] text-nx-muted">
-            {active?.memberCount} members
-          </span>
-        </div>
-
-        <ChevronDown
-          size={12}
-          className={cn('text-nx-ghost transition-transform duration-150', open && 'rotate-180')}
-        />
+          {active?.memberCount}m
+        </span>
       </button>
 
       {/* Dropdown */}
       {open && (
         <>
-          {/* Clickaway */}
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
             className="absolute left-2 right-2 top-full z-50 mt-1 overflow-hidden rounded-xl animate-scale-in"
             style={{
-              background: '#1D1D32',
-              boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 20px 48px rgba(0,0,0,0.75)',
+              background: '#0D0D25',
+              boxShadow: '0 0 0 1px rgba(0,238,255,0.15), 0 20px 48px rgba(0,0,0,0.90)',
             }}
           >
+            {/* Top accent bar */}
+            <div
+              className="h-[1px]"
+              style={{ background: 'linear-gradient(90deg, #FF0055, #9D00FF, #00EEFF)' }}
+            />
             {teams.map((team) => (
               <button
                 key={team.id}
                 onClick={() => { onSelect(team.id); setOpen(false) }}
                 className={cn(
-                  'flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors',
-                  'hover:bg-nx-overlay',
-                  team.id === activeTeamId && 'bg-nx-violet-dim',
+                  'flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-nx-overlay',
+                  team.id === activeTeamId && 'bg-nx-cyan-dim',
                 )}
               >
                 <div
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[9px] font-bold text-white"
-                  style={{ background: team.color }}
+                  className="h-2 w-2 shrink-0 rounded-full"
+                  style={{ background: team.color, boxShadow: `0 0 8px ${team.color}80` }}
                 />
-                <div className="flex-1 overflow-hidden">
-                  <p className="truncate text-sm font-medium text-nx-primary">{team.name}</p>
-                  <p className="text-[10px] text-nx-muted">{team.memberCount} members</p>
-                </div>
-                {team.isPrivate && <Lock size={10} className="ml-auto text-nx-ghost" />}
+                <span className="flex-1 truncate font-mono text-xs text-white">{team.name.toUpperCase()}</span>
+                {team.isPrivate && <Lock size={9} className="text-nx-dim" />}
                 {team.id === activeTeamId && (
-                  <span className="ml-1 h-1.5 w-1.5 rounded-full bg-nx-violet" />
+                  <span className="neon-cyan font-mono text-[9px]">ACTIVE</span>
                 )}
               </button>
             ))}
-            <div className="sep-top mx-3" />
-            <button className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-nx-muted hover:bg-nx-overlay">
-              <Plus size={12} />
-              <span>Create team</span>
+            <div className="h-[1px]" style={{ background: 'rgba(0,238,255,0.06)' }} />
+            <button className="flex w-full items-center gap-2 px-3 py-2 font-mono text-[10px] text-nx-dim hover:bg-nx-overlay hover:text-nx-fog">
+              <Plus size={10} />
+              CREATE TEAM
             </button>
           </div>
         </>
@@ -212,50 +220,28 @@ function WorkspaceHeader({
   )
 }
 
-// ─── DM item ──────────────────────────────────────────────────────────────────
-function DMItem({
-  thread,
-  isActive,
-  onClick,
-}: {
-  thread: (typeof MOCK_DM_THREADS)[number]
-  isActive: boolean
-  onClick: () => void
-}) {
-  const other     = thread.participants[1]
-  const hasUnread = thread.unreadCount > 0
-
+// ─── Section label ────────────────────────────────────────────────────────────
+function SepLabel({ text }: { text: string }) {
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'ch-item',
-        isActive  && 'active',
-        hasUnread && !isActive && 'unread',
-      )}
-    >
-      <Avatar initials={other.initials} status={other.status} size="xs" />
-      <span className={cn(
-        'flex-1 truncate text-left text-sm',
-        hasUnread && !isActive && 'font-semibold',
-      )}>
-        {other.name}
-      </span>
-      {hasUnread && !isActive && <UnreadBadge count={thread.unreadCount} />}
-    </button>
+    <div className="sep-label flex items-center gap-2">
+      <span style={{ color: 'rgba(0,238,255,0.15)' }}>───</span>
+      <span>{text}</span>
+      <span style={{ color: 'rgba(0,238,255,0.15)' }}>─────────────────</span>
+    </div>
   )
 }
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
-export function Sidebar() {
+export function Sidebar({
+  onToggle,
+}: {
+  onToggle: () => void
+  collapsed?: boolean
+}) {
   const {
-    teams, channels, activeTeamId, activeChannelId,
-    setActiveTeam, setActiveChannel,
+    teams, channels, activeTeamId,
+    setActiveTeam,
   } = useChannelStore()
-  const { sidebarCollapsed } = useUIStore()
-  const navigate = useNavigate()
-
-  if (sidebarCollapsed) return null
 
   const teamChannels   = channels.filter((c) => c.teamId === activeTeamId)
   const pinnedChannels = teamChannels.filter((c) => c.isPinned)
@@ -263,66 +249,82 @@ export function Sidebar() {
 
   return (
     <aside
-      className="flex h-full flex-col overflow-hidden animate-slide-right"
+      className="flex h-full flex-col"
       style={{
         width: 'var(--sidebar-w)',
-        background: '#0E0E1B',
-        borderRight: '1px solid rgba(255,255,255,0.045)',
+        background: '#07071A',
+        borderRight: '1px solid rgba(0,238,255,0.06)',
       }}
     >
-      {/* Workspace header */}
-      <div className="sep-bottom shrink-0">
-        <WorkspaceHeader
+      {/* Top accent line */}
+      <div
+        className="h-[1px] w-full shrink-0"
+        style={{ background: 'linear-gradient(90deg, #FF0055, #9D00FF, #00EEFF, transparent)' }}
+      />
+
+      {/* Workspace/team header */}
+      <div className="shrink-0 sep-bottom">
+        <TeamDropdown
           teams={teams}
           activeTeamId={activeTeamId}
           onSelect={setActiveTeam}
         />
       </div>
 
-      {/* Scrollable channel list */}
-      <div className="flex flex-1 flex-col overflow-y-auto px-2 pb-4 no-scrollbar">
+      {/* Channel + DM list */}
+      <div className="flex flex-1 flex-col overflow-y-auto pb-2 no-scrollbar">
 
         {pinnedChannels.length > 0 && (
-          <SidebarSection title="Pinned">
+          <>
+            <SepLabel text="PINNED" />
             {pinnedChannels.map((ch) => <ChannelItem key={ch.id} channel={ch} />)}
-          </SidebarSection>
+          </>
         )}
 
-        <SidebarSection
-          title="Channels"
-          onAdd={() => console.log('add channel')}
-          addLabel="Add channel"
-        >
-          {otherChannels.map((ch) => <ChannelItem key={ch.id} channel={ch} />)}
-        </SidebarSection>
+        <SepLabel text="CHANNELS" />
+        {otherChannels.map((ch) => <ChannelItem key={ch.id} channel={ch} />)}
 
-        <SidebarSection
-          title="Direct Messages"
-          onAdd={() => console.log('new dm')}
-          addLabel="New message"
-        >
-          {MOCK_DM_THREADS.map((thread) => (
-            <DMItem
-              key={thread.id}
-              thread={thread}
-              isActive={activeChannelId === thread.id}
-              onClick={() => {
-                setActiveChannel(thread.id)
-                navigate(`/dm/${thread.participants[1].id}`)
-              }}
-            />
-          ))}
-        </SidebarSection>
+        {/* Add channel */}
+        <Tooltip content="Add channel" side="right" delayDuration={400}>
+          <button className="ch-item text-nx-ghost hover:text-nx-dim mt-0.5">
+            <span className="w-3 shrink-0" />
+            <Plus size={10} />
+            <span>add channel</span>
+          </button>
+        </Tooltip>
+
+        <SepLabel text="DIRECT" />
+        {MOCK_DM_THREADS.map((thread) => (
+          <DMItem key={thread.id} thread={thread} />
+        ))}
+
+        {/* New DM */}
+        <Tooltip content="New DM" side="right" delayDuration={400}>
+          <button className="ch-item text-nx-ghost hover:text-nx-dim mt-0.5">
+            <span className="w-3 shrink-0" />
+            <Plus size={10} />
+            <span>new message</span>
+          </button>
+        </Tooltip>
       </div>
 
       {/* Footer */}
       <div
-        className="shrink-0 px-3 py-2 sep-top"
-        style={{ background: 'rgba(0,0,0,0.15)' }}
+        className="shrink-0 flex items-center justify-between px-3 py-2 sep-top"
+        style={{ background: 'rgba(0,0,0,0.20)' }}
       >
-        <p className="text-[10px] tracking-wide text-nx-ghost">
-          {truncate(teams.find((t) => t.id === activeTeamId)?.name ?? 'Nexus', 22)} workspace
-        </p>
+        <span className="font-mono text-[9px] text-nx-ghost">
+          SYS // {truncate(teams.find((t) => t.id === activeTeamId)?.name ?? 'NEXUS', 12).toUpperCase()}
+        </span>
+        {/* Collapse button */}
+        <Tooltip content="Collapse (⌘\\)" side="right" delayDuration={400}>
+          <button
+            onClick={onToggle}
+            className="rounded p-0.5 text-nx-ghost hover:text-nx-dim transition-colors"
+          >
+            <PanelLeftClose size={12} />
+          </button>
+        </Tooltip>
       </div>
     </aside>
   )
