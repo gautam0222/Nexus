@@ -12,8 +12,8 @@ interface MessageState {
   deleteMessage: (messageId: string) => void
 }
 
-export const useMessageStore = create<MessageState>()((set, get) => ({
-  messages: MOCK_MESSAGES.reduce<Record<string, Message[]>>((acc, msg) => {
+export const useMessageStore = create<MessageState>()((_set, get) => ({
+  messages: MOCK_MESSAGES.reduce((acc: Record<string, Message[]>, msg: Message) => {
     if (!acc[msg.channelId]) acc[msg.channelId] = []
     acc[msg.channelId].push(msg)
     return acc

@@ -105,7 +105,7 @@ function MessageItem({ message, isGrouped }: {
                 {/* Reactions */}
                 {message.reactions.length > 0 && (
                     <div className="mt-1 flex flex-wrap gap-1">
-                        {message.reactions.map((r) => (
+                        {message.reactions.map((r: any) => (
                             <button
                                 key={r.emoji}
                                 className={cn(
@@ -183,7 +183,7 @@ function MessageList() {
 
     return (
         <div className="flex flex-1 flex-col justify-end overflow-y-auto px-2 py-4">
-            {messages.map((msg, i) => {
+            {messages.map((msg: any, i: number) => {
                 const prev = messages[i - 1]
                 const isGrouped =
                     !!prev &&
