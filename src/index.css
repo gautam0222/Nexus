@@ -1,112 +1,62 @@
 @import "tailwindcss";
 @config "../tailwind.config.ts";
 
-/* ─── Variables ──────────────────────────────────────────────── */
+/* ─── Variables ────────────────────────────────────────────── */
 :root {
-  --rail-w: 56px;
-  --sidebar-w: 240px;
-  --radius: 6px;
-  --transition: 120ms ease;
+  --sidebar-w: 260px;
 }
 
-/* ─── Base ────────────────────────────────────────────────────── */
+/* ─── Base ─────────────────────────────────────────────────── */
 @layer base {
   *, *::before, *::after { box-sizing: border-box; }
   html, body, #root { height: 100%; margin: 0; padding: 0; }
 
   body {
-    @apply bg-nx-base font-sans text-nx-secondary antialiased;
-    font-feature-settings: "cv11", "ss01", "liga";
+    @apply bg-app font-sans text-lo antialiased;
+    font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
   }
 
-  /* Thin, subtle scrollbar */
+  /* Slim scrollbar */
   ::-webkit-scrollbar       { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.10);
-    border-radius: 99px;
-  }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); border-radius: 99px; }
   ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
-  ::-webkit-scrollbar-corner { background: transparent; }
 
-  button, input, textarea { outline: none; }
-  ::selection { background: rgba(92,92,219,0.28); color: #EAEAEA; }
+  button, input, textarea, select { outline: none; }
+  ::selection { background: rgba(88,101,242,0.35); color: #e3e5e8; }
 }
 
-/* ─── Components ──────────────────────────────────────────────── */
+/* ─── Components ───────────────────────────────────────────── */
 @layer components {
 
-  /* ── Focus ring ─────────────────────────────────────────────── */
-  .focus-ring {
-    @apply focus-visible:ring-1 focus-visible:ring-nx-accent/50 focus-visible:ring-offset-0;
+  /* Sidebar channel / DM row */
+  .ch-item {
+    @apply flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm
+           text-dim cursor-pointer select-none transition-colors duration-75;
   }
+  .ch-item:hover   { @apply bg-hover text-lo; }
+  .ch-item.active  { @apply bg-active text-hi; }
+  .ch-item.unread  { @apply text-hi; }
 
-  /* ── Nav rail icon button ─────────────────────────────────────── */
-  .rail-btn {
-    @apply relative flex h-9 w-9 items-center justify-center rounded-lg
-           text-nx-muted transition-all duration-100 cursor-pointer select-none;
+  /* Main nav icon button */
+  .nav-btn {
+    @apply flex h-9 w-9 items-center justify-center rounded-lg
+           text-dim transition-colors duration-75 cursor-pointer;
   }
-  .rail-btn:hover { @apply bg-nx-hover text-nx-secondary; }
-  .rail-btn.active { @apply bg-nx-accent/15 text-nx-accent; }
+  .nav-btn:hover  { @apply bg-hover text-lo; }
+  .nav-btn.active { @apply bg-brand/15 text-brand; }
 
-  /* ── Sidebar nav item ─────────────────────────────────────────── */
-  .nav-item {
-    @apply relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-[5px]
-           text-nx-muted cursor-pointer select-none transition-all duration-100;
-    font-size: 13px;
-  }
-  .nav-item:hover { @apply bg-nx-hover text-nx-secondary; }
-  .nav-item.active { @apply bg-nx-active text-nx-primary; }
-  .nav-item.unread { @apply text-nx-primary; }
-
-  /* Left accent bar on active */
-  .nav-item.active::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 20%; height: 60%;
-    width: 2px; border-radius: 0 2px 2px 0;
-    background: #5C5CDB;
-  }
-
-  /* ── Message hover row ─────────────────────────────────────────── */
+  /* Message row */
   .msg-row {
-    @apply relative flex gap-3 rounded-lg px-4 py-1.5 transition-colors duration-100;
+    @apply flex gap-3 px-4 py-0.5 transition-colors duration-75;
   }
-  .msg-row:hover { @apply bg-nx-hover/50; }
-
-  /* ── Composer ─────────────────────────────────────────────────── */
-  .composer {
-    @apply rounded-xl transition-all duration-150;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.08);
-  }
-  .composer:focus-within {
-    border-color: rgba(92,92,219,0.40);
-    box-shadow: 0 0 0 3px rgba(92,92,219,0.08);
-  }
-
-  /* ── Popup / dropdown ─────────────────────────────────────────── */
-  .popup {
-    @apply animate-scale-in rounded-xl overflow-hidden;
-    background: #1A1A1D;
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 12px 40px rgba(0,0,0,0.70);
-  }
-
-  /* ── Badge ─────────────────────────────────────────────────────── */
-  .unread-badge {
-    @apply flex h-[18px] min-w-[18px] items-center justify-center rounded-full
-           px-1 text-[10px] font-semibold text-white;
-    background: #5C5CDB;
-  }
-  .unread-badge.mention { background: #E5484D; }
+  .msg-row:hover { @apply bg-hover/40; }
 }
 
-/* ─── Utilities ───────────────────────────────────────────────── */
+/* ─── Utilities ────────────────────────────────────────────── */
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-  .sep { border-top: 1px solid rgba(255,255,255,0.07); }
-  .sep-b { border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .border-line  { border-color: rgba(255,255,255,0.08); }
 }

@@ -1,31 +1,65 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
-  ChevronDown, Hash, Lock, Megaphone,
-  MoreHorizontal, Plus, Volume2,
+  Bell, MessageSquare, Users, Calendar, FolderOpen, Video,
+  Settings, Hash, Lock, ChevronDown, ChevronRight, Plus, Search,
 } from 'lucide-react'
-import { MOCK_DM_THREADS } from '@/mockData'
-import { Avatar } from '@/components/ui/Avatar'
-import { Tooltip } from '@/components/ui/Tooltip'
 import { useChannelStore } from '@/store/channelStore'
-import type { Channel, ChannelType, Team } from '@/types'
-import { cn, truncate } from '@/utils'
+import { useUIStore } from '@/store'
+import { useAuthStore } from '@/store/authStore'
+import { MOCK_DM_THREADS } from '@/mockData'
+import { cn } from '@/utils'
+import type { Channel } from '@/types'
 
-// ─── Channel type icon ────────────────────────────────────────────────────────
-function CIcon({ type, isPrivate }: { type: ChannelType; isPrivate: boolean }) {
-  const cls = 'shrink-0 text-nx-muted'
-  if (isPrivate)               return <Lock      size={13} className={cls} />
-  if (type === 'announcement') return <Megaphone size={13} className={cls} />
-  if (type === 'voice')        return <Volume2   size={13} className={cls} />
-  return <Hash size={13} className={cls} />
+// ─── Nav links ────────────────────────────────────────────────
+
+const NAV = [
+  { label: 'Activity',   icon: Bell,         path: '/activity' },
+  { label: 'Chat',       icon: MessageSquare, path: '/chat' },
+  { label: 'Teams',      icon: Users,         path: '/teams' },
+  { label: 'Calendar',   icon: Calendar,      path: '/calendar' },
+  { label: 'Files',      icon: FolderOpen,    path: '/files' },
+  { label: 'Calls',      icon: Video,         path: '/calls' },
+]
+
+// ─── Collapsible section ──────────────────────────────────────
+
+function Section({ title, onAdd, children }: {
+  title: string
+  onAdd?: () => void
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(true)
+  return (
+    <div className="mt-4">
+      <div className="group flex items-center justify-between px-2 mb-0.5">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="flex items-center gap-1 text-xs font-semibold uppercase tracking-widest text-dim hover:text-lo"
+        >
+          {open ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+          {title}
+        </button>
+        {onAdd && (
+          <button
+            onClick={onAdd}
+            className="opacity-0 group-hover:opacity-100 text-dim hover:text-lo transition-opacity"
+          >
+            <Plus size={14} />
+          </button>
+        )}
+      </div>
+      {open && <div>{children}</div>}
+    </div>
+  )
 }
 
-// ─── Channel item ─────────────────────────────────────────────────────────────
-function ChannelItem({ channel }: { channel: Channel }) {
-  const navigate  = useNavigate()
+// ─── Channel row ──────────────────────────────────────────────
+
+function ChannelRow({ channel }: { channel: Channel }) {
+  const navigate = useNavigate()
   const { activeChannelId, setActiveChannel, markChannelRead } = useChannelStore()
-  const isActive  = activeChannelId === channel.id
-  const hasUnread = channel.unreadCount > 0
+  const isActive = activeChannelId === channel.id
 
   function go() {
     setActiveChannel(channel.id)
@@ -34,21 +68,24 @@ function ChannelItem({ channel }: { channel: Channel }) {
   }
 
   return (
-    <button onClick={go} className={cn('nav-item group', isActive && 'active', hasUnread && !isActive && 'unread')}>
-      <CIcon type={channel.type} isPrivate={channel.isPrivate} />
-
-      <span className={cn('flex-1 truncate text-left', hasUnread && !isActive && 'font-medium')}>
-        {channel.name}
-      </span>
-
-      {/* More — shows on hover */}
-      <span className="opacity-0 group-hover:opacity-100 transition-opacity rounded p-0.5 hover:bg-nx-active">
-        <MoreHorizontal size={12} className="text-nx-muted" />
-      </span>
-
-      {/* Unread badge */}
-      {hasUnread && !isActive && (
-        <span className={cn('unread-badge text-[10px] h-[16px] min-w-[16px]', channel.hasMention && 'mention')}>
+    <button
+      onClick={go}
+      className={cn(
+        'ch-item',
+        isActive && 'active',
+        channel.unreadCount > 0 && !isActive && 'unread',
+      )}
+    >
+      {channel.isPrivate
+        ? <Lock size={13} className="shrink-0 opacity-50" />
+        : <Hash size={13} className="shrink-0 opacity-50" />
+      }
+      <span className="flex-1 truncate">{channel.name}</span>
+      {channel.unreadCount > 0 && !isActive && (
+        <span className={cn(
+          'flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white',
+          channel.hasMention ? 'bg-danger' : 'bg-brand',
+        )}>
           {channel.unreadCount > 99 ? '99+' : channel.unreadCount}
         </span>
       )}
@@ -56,181 +93,97 @@ function ChannelItem({ channel }: { channel: Channel }) {
   )
 }
 
-// ─── Section header ───────────────────────────────────────────────────────────
-function Section({
-  title,
-  children,
-  onAdd,
-  addLabel,
-  defaultOpen = true,
-}: {
-  title: string
-  children: React.ReactNode
-  onAdd?: () => void
-  addLabel?: string
-  defaultOpen?: boolean
-}) {
-  const [open, setOpen] = useState(defaultOpen)
+// ─── Main sidebar ─────────────────────────────────────────────
 
-  return (
-    <div className="flex flex-col">
-      <div className="group flex items-center justify-between pr-1">
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="flex flex-1 items-center gap-1 py-1 pl-1 text-[11px] font-semibold uppercase tracking-widest text-nx-ghost transition-colors hover:text-nx-muted"
-        >
-          <ChevronDown size={11} className={cn('transition-transform duration-100', !open && '-rotate-90')} />
-          {title}
-        </button>
-        {onAdd && (
-          <Tooltip content={addLabel ?? 'Add'} side="right" delayDuration={300}>
-            <button
-              onClick={onAdd}
-              className="rounded p-0.5 text-nx-ghost opacity-0 transition-all group-hover:opacity-100 hover:bg-nx-hover hover:text-nx-muted"
-            >
-              <Plus size={13} />
-            </button>
-          </Tooltip>
-        )}
-      </div>
-
-      {open && (
-        <div className="flex flex-col gap-px animate-slide-right">
-          {children}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── Workspace / team switcher ────────────────────────────────────────────────
-function WorkspaceSwitcher({ teams, activeTeamId, onSelect }: {
-  teams: Team[]
-  activeTeamId: string | null
-  onSelect: (id: string) => void
-}) {
-  const [open, setOpen] = useState(false)
-  const active = teams.find((t) => t.id === activeTeamId)
-
-  return (
-    <div className="relative px-2 pb-2 pt-3">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className={cn(
-          'flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 transition-colors',
-          'hover:bg-nx-hover',
-          open && 'bg-nx-hover',
-        )}
-      >
-        {/* Team dot */}
-        <div
-          className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] font-bold text-white"
-          style={{ background: active?.color ?? '#5C5CDB' }}
-        >
-          {active?.name.charAt(0)}
-        </div>
-        <div className="flex flex-1 flex-col items-start overflow-hidden leading-tight">
-          <span className="truncate text-sm font-semibold text-nx-primary">{active?.name ?? 'Select team'}</span>
-          <span className="text-[11px] text-nx-muted">{active?.memberCount} members</span>
-        </div>
-        <ChevronDown size={13} className={cn('shrink-0 text-nx-muted transition-transform duration-100', open && 'rotate-180')} />
-      </button>
-
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="popup absolute left-2 right-2 top-full z-50 mt-1">
-            {teams.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => { onSelect(t.id); setOpen(false) }}
-                className={cn(
-                  'flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors',
-                  'hover:bg-nx-hover',
-                  t.id === activeTeamId && 'bg-nx-accent-dim text-nx-primary',
-                )}
-              >
-                <div
-                  className="h-2 w-2 shrink-0 rounded-full"
-                  style={{ background: t.color }}
-                />
-                <span className="flex-1 truncate text-nx-secondary">{t.name}</span>
-                {t.isPrivate && <Lock size={11} className="text-nx-muted" />}
-                {t.id === activeTeamId && <span className="h-1.5 w-1.5 rounded-full bg-nx-accent" />}
-              </button>
-            ))}
-            <div className="sep mx-2" />
-            <button className="flex w-full items-center gap-2 px-3 py-2 text-sm text-nx-muted hover:bg-nx-hover">
-              <Plus size={13} />
-              Create team
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
-
-// ─── Sidebar ──────────────────────────────────────────────────────────────────
 export function Sidebar() {
   const navigate = useNavigate()
-  const {
-    teams, channels, activeTeamId, activeChannelId,
-    setActiveTeam, setActiveChannel,
-  } = useChannelStore()
+  const location = useLocation()
+  const { teams, channels, activeTeamId } = useChannelStore()
+  const { openSearch } = useUIStore()
+  const { user } = useAuthStore()
 
-  const teamChannels   = channels.filter((c) => c.teamId === activeTeamId)
-  const pinnedChannels = teamChannels.filter((c) => c.isPinned)
-  const otherChannels  = teamChannels.filter((c) => !c.isPinned)
+  const activeTeam = teams.find((t) => t.id === activeTeamId)
+  const teamChannels = channels.filter((ch) => ch.teamId === activeTeamId)
 
   return (
     <aside
-      className="flex h-full flex-col"
-      style={{
-        width: 'var(--sidebar-w)',
-        background: '#141416',
-        borderRight: '1px solid rgba(255,255,255,0.07)',
-      }}
+      className="flex h-full flex-col border-r"
+      style={{ width: 'var(--sidebar-w)', background: '#19171d', borderColor: 'rgba(255,255,255,0.08)' }}
     >
-      {/* Workspace switcher */}
-      <div className="shrink-0 sep-b">
-        <WorkspaceSwitcher
-          teams={teams}
-          activeTeamId={activeTeamId}
-          onSelect={setActiveTeam}
-        />
+      {/* Workspace header */}
+      <div className="flex items-center justify-between border-b px-3 py-3" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+        <div className="flex items-center gap-2">
+          <div
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white"
+            style={{ background: '#5865f2' }}
+          >
+            N
+          </div>
+          <span className="text-sm font-semibold text-hi truncate">
+            {activeTeam?.name ?? 'Nexus'}
+          </span>
+        </div>
+        <button
+          onClick={openSearch}
+          className="text-dim hover:text-lo transition-colors"
+          title="Search (⌘K)"
+        >
+          <Search size={15} />
+        </button>
       </div>
 
-      {/* Scrollable list */}
-      <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-2 pt-3 no-scrollbar">
-        {pinnedChannels.length > 0 && (
-          <Section title="Pinned">
-            {pinnedChannels.map((ch) => <ChannelItem key={ch.id} channel={ch} />)}
-          </Section>
-        )}
+      {/* Nav links */}
+      <nav className="px-2 pt-2">
+        {NAV.map(({ label, icon: Icon, path }) => {
+          const isActive = location.pathname === path || location.pathname.startsWith(path + '/')
+          return (
+            <button
+              key={path}
+              onClick={() => navigate(path)}
+              className={cn(
+                'ch-item mb-0.5',
+                isActive && 'active',
+              )}
+            >
+              <Icon size={15} className="shrink-0" />
+              <span>{label}</span>
+            </button>
+          )
+        })}
+      </nav>
 
-        <Section title="Channels" onAdd={() => {}} addLabel="Add channel">
-          {otherChannels.map((ch) => <ChannelItem key={ch.id} channel={ch} />)}
+      {/* Divider */}
+      <div className="mx-3 mt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.08)' }} />
+
+      {/* Channel list */}
+      <div className="flex-1 overflow-y-auto px-2 pb-4">
+        <Section title="Channels" onAdd={() => {}}>
+          {teamChannels.map((ch) => <ChannelRow key={ch.id} channel={ch} />)}
         </Section>
 
-        <Section title="Direct Messages" onAdd={() => {}} addLabel="New message">
+        <Section title="Direct Messages" onAdd={() => {}}>
           {MOCK_DM_THREADS.map((thread) => {
-            const other    = thread.participants[1]
-            const isActive = activeChannelId === thread.id
-            const hasUnread = thread.unreadCount > 0
-
+            const other = thread.participants[1]
             return (
               <button
                 key={thread.id}
-                onClick={() => { setActiveChannel(thread.id); navigate(`/dm/${other.id}`) }}
-                className={cn('nav-item', isActive && 'active', hasUnread && !isActive && 'unread')}
+                onClick={() => navigate(`/dm/${other.id}`)}
+                className="ch-item"
               >
-                <Avatar initials={other.initials} status={other.status} size="xs" />
-                <span className={cn('flex-1 truncate text-left', hasUnread && !isActive && 'font-medium')}>
-                  {other.name}
-                </span>
-                {hasUnread && !isActive && (
-                  <span className="unread-badge text-[10px] h-[16px] min-w-[16px]">
+                <div className="relative shrink-0">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-surface text-2xs font-semibold text-hi">
+                    {other.initials}
+                  </div>
+                  <span className={cn(
+                    'absolute -bottom-px -right-px h-2 w-2 rounded-full ring-1 ring-sidebar',
+                    other.status === 'online' ? 'bg-online' :
+                    other.status === 'busy' ? 'bg-busy' :
+                    other.status === 'away' ? 'bg-away' : 'bg-offline',
+                  )} />
+                </div>
+                <span className="flex-1 truncate">{other.name}</span>
+                {thread.unreadCount > 0 && (
+                  <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-white">
                     {thread.unreadCount}
                   </span>
                 )}
@@ -240,12 +193,30 @@ export function Sidebar() {
         </Section>
       </div>
 
-      {/* Footer */}
-      <div className="shrink-0 px-3 py-2 sep" style={{ background: 'rgba(0,0,0,0.12)' }}>
-        <p className="text-[11px] text-nx-ghost">
-          {truncate(teams.find((t) => t.id === activeTeamId)?.name ?? 'Nexus', 22)} workspace
-        </p>
-      </div>
+      {/* User footer */}
+      {user && (
+        <div
+          className="flex items-center gap-2 border-t px-3 py-2.5"
+          style={{ borderColor: 'rgba(255,255,255,0.08)' }}
+        >
+          <div className="relative shrink-0">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-surface text-xs font-semibold text-hi">
+              {user.initials}
+            </div>
+            <span className="absolute -bottom-px -right-px h-2.5 w-2.5 rounded-full bg-online ring-1 ring-sidebar" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-hi truncate">{user.name}</p>
+            <p className="text-2xs text-dim truncate">{user.title ?? user.email}</p>
+          </div>
+          <button
+            onClick={() => navigate('/settings')}
+            className="text-dim hover:text-lo transition-colors shrink-0"
+          >
+            <Settings size={14} />
+          </button>
+        </div>
+      )}
     </aside>
   )
 }

@@ -1,84 +1,73 @@
-# Nexus
+# Nexus — Modern Team Communication
 
-Nexus is a scalable, feature-rich collaboration and communication platform designed to bring teams together. Built with a modern tech stack (React, TypeScript, Vite, Tailwind CSS, and Zustand), it provides an experience akin to platforms like Microsoft Teams or Slack.
+Nexus is a fast, responsive, and beautifully designed team communication platform. Inspired by modern chat apps like Slack and Discord, Nexus focuses on a clean, distraction-free UI, keyboard accessibility, and a premium user experience.
 
-## Core Features
+## ✨ Features
 
-- 💬 **Messaging & Channels**: Robust text, image, file, and system messaging within organized channels.
-- 📞 **Voice & Video Calls**: Real-time communication and conferencing capabilities.
-- 👥 **Team & Workspace Management**: Manage users, roles (owner, admin, member, guest), and channel access.
-- 📁 **File Sharing**: Centralized file uploads and attachments.
-- 🔔 **Notifications**: Stay updated with mentions, replies, reactions, DMs, and calls.
-- 🧭 **Keyboard Shortcuts**: Power user shortcuts (like \`⌘K\` for quick search and \`⌘\\\` for sidebar toggling).
-- 🎨 **Modern Design System**: Beautiful and responsive UI built with Tailwind CSS, supporting dark/light mode seamlessly.
+### 💬 Rich Messaging
+*   **Rich Text Composer**: Format your messages with Bold, Italic, Strikethrough, Code, and Links using a contextual toolbar or keyboard shortcuts (`⌘B`, `⌘I`, `⌘E`).
+*   **Markdown Support**: Full inline markdown rendering for messages, including code blocks, blockquotes, and links.
+*   **Message Actions**: Edit your own messages inline, delete messages, and reply in threaded conversations.
+*   **Smart Timeline**: Auto-scrolling, date dividers (Today, Yesterday), and an animated typing indicator.
+*   **Reactions**: A fast popup reaction picker and standard emoji picker built from scratch.
 
-## Tech Stack
+### 📎 Media & Attachments
+*   **Drag & Drop**: Seamlessly drag and drop files onto the composer to attach them.
+*   **Inline Previews**: Image attachments display thumbnail previews directly inside the chat timeline.
 
-- **Framework:** React 18
-- **Build Tool:** Vite
-- **Language:** TypeScript
-- **State Management:** Zustand
-- **Styling:** Tailwind CSS
-- **Icons:** Lucide React
-- **Routing:** React Router
+### ⌨️ Power-User Navigation
+*   **Command Palette (`⌘K`)**: A global command palette to instantly search channels, direct messages, or execute quick actions.
+*   **Keyboard First**: Submit with `Enter`, newline with `Shift+Enter`, and navigate popups with arrow keys.
 
-## Directory Structure
+### 🎨 Premium UI/UX
+*   **Tailwind 12-Color System**: Built on a highly constrained, cohesive, and custom token-based Tailwind CSS design system.
+*   **Immersive Layout**: AppShell-based layout with collapsible sidebars, a sliding right-hand thread panel, and a member list panel.
+*   **Micro-animations**: Smooth hover transitions, fade-ins, and layout snaps for a polished feel.
 
-\`\`\`
-src/
-├── assets/           # Static assets, fonts, and images
-├── components/       # Reusable components organized by domain (calls, channels, chat, layout)
-├── constants/        # Application-wide constants & storage keys
-├── hooks/            # Custom React hooks
-├── mockData/         # Local stubs and placeholder data during development
-├── pages/            # High-level views/routes (Chat, Teams, Calendar, etc.)
-├── services/         # API wrappers and socket logic
-├── store/            # Global state management (Zustand)
-├── types/            # Centralized TypeScript definitions
-└── utils/            # Shared utilities and helper functions
-\`\`\`
+## 🚀 Tech Stack
 
-## Getting Started
+*   **Framework**: [React 18](https://reactjs.org/) + [Vite](https://vitejs.dev/)
+*   **Language**: [TypeScript](https://www.typescriptlang.org/)
+*   **Styling**: [Tailwind CSS v3](https://tailwindcss.com/) + CSS Variables
+*   **State Management**: [Zustand](https://docs.pmnd.rs/zustand/getting-started/introduction) (for Channels, Messages, UI state, and Auth)
+*   **Routing**: [React Router v6](https://reactrouter.com/)
+*   **Icons**: [Lucide React](https://lucide.dev/)
 
-### Prerequisites
-- Node.js (v16+)
-- npm, yarn, or pnpm
+## 🛠️ Installation & Setup
 
-### Installation
-
-1. Clone the repository:
-   \`\`\`bash
+1. **Clone the repository:**
+   ```bash
    git clone https://github.com/gautam0222/Nexus.git
    cd Nexus
-   \`\`\`
+   ```
 
-2. Install dependencies:
-   \`\`\`bash
+2. **Install dependencies:**
+   ```bash
    npm install
-   \`\`\`
+   ```
 
-3. Start the development server:
-   \`\`\`bash
+3. **Start the development server:**
+   ```bash
    npm run dev
-   \`\`\`
+   ```
 
-4. Open \`http://localhost:5173\` in your browser to view the application.
+4. **Open in browser:**
+   Navigate to `http://localhost:3000` (or the port specified by Vite).
 
-## Available Scripts
+## 📁 Project Structure
 
-- \`npm run dev\` - Starts the development server.
-- \`npm run build\` - Builds the app for production.
-- \`npm run lint\` - Runs ESLint to catch code quality issues.
-- \`npm run preview\` - Locally preview the production build.
+```text
+src/
+├── components/
+│   ├── chat/        # Message items, Composer, Thread panels
+│   ├── layout/      # AppShell, Sidebar, Top Navigation
+│   └── ui/          # Generic reusable UI (Toast, CommandPalette, EmojiPicker)
+├── store/           # Zustand stores (messageStore, channelStore, uiStore)
+├── pages/           # Route-level components (Activity, Chat, Teams)
+├── utils/           # Helper functions (cn for Tailwind, formatters)
+├── types/           # TypeScript interfaces and entity models
+└── mockData/        # Seed data to run the app without a backend
+```
 
-## Keyboard Shortcuts
-
-| Shortcut | Action |
-|----------|--------|
-| \`⌘\` + \`K\`  | Open Global Search |
-| \`⌘\` + \`\\\`  | Toggle Sidebar |
-| \`Esc\`    | Close Overlays / Search |
-
-## License
-
-This project is licensed under the MIT License.
+## 📜 License
+This project is open-source and available under the MIT License.
